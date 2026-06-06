@@ -283,6 +283,10 @@
   .dl-src{font-size:11.5px;color:var(--ink-faint);margin-top:2px;text-transform:uppercase;letter-spacing:.06em;}
   .dl-more{font-size:12.5px;color:var(--ink-soft);padding:8px 4px 0;}
 
+  .task-row .dt-text{flex:1;border:none;background:transparent;font-size:15px;font-weight:500;padding:6px 0;min-width:0;color:var(--ink);}
+  .task-row .dt-text:focus{box-shadow:none;border-bottom:1px solid var(--accent);}
+  .task-row.done .dt-text{text-decoration:line-through;color:var(--ink-faint);}
+
   /* ---- dashboard grid + new widgets ---- */
   .dash-grid{display:grid;grid-template-columns:1fr;gap:16px;}
   .dw{grid-column:1/-1;min-width:0;}
@@ -418,7 +422,7 @@
     if(!Array.isArray(rt)) return defaultResourceTabs();
     return rt.map(t=>({ id:t.id||uid(), name:t.name||'Resources', fixed:!!t.fixed, items:Array.isArray(t.items)?t.items.map(it=>({id:it.id||uid(),label:it.label||'',url:it.url||'',type:(it.type&&String(it.type).trim())||'Notes'})):[] }));
   }
-  function blankState(){ return { settings:{tasks:DEFAULT_TASKS.slice()}, days:{}, weekly:[], monthly:[], series:[], syllabus:[], syllabusInit:false, resTypes:DEFAULT_RES_TYPES.slice(), resourceTabs:defaultResourceTabs(), customTabs:[], hiddenBuiltins:[], exams:[], dashWidgets:DEFAULT_DASH_WIDGETS.slice(), hoursGoal:0, dashStickies:[], dashSizes:{} }; }
+  function blankState(){ return { settings:{tasks:DEFAULT_TASKS.slice()}, days:{}, weekly:[], monthly:[], weeks:{}, months:{}, series:[], syllabus:[], syllabusInit:false, resTypes:DEFAULT_RES_TYPES.slice(), resourceTabs:defaultResourceTabs(), customTabs:[], hiddenBuiltins:[], exams:[], dashWidgets:DEFAULT_DASH_WIDGETS.slice(), hoursGoal:0, dashStickies:[], dashSizes:{} }; }
   function normCustomTabs(ct){
     if(!Array.isArray(ct)) return [];
     return ct.map(t=>{
@@ -439,9 +443,24 @@
       }
     }).filter(Boolean);
   }
-  function normalize(o){ o=o||{}; return { settings:(o.settings&&Array.isArray(o.settings.tasks)&&o.settings.tasks.length)?o.settings:{tasks:DEFAULT_TASKS.slice()}, days:o.days||{}, weekly:o.weekly||[], monthly:o.monthly||[], series:o.series||[], syllabus:o.syllabus||[], syllabusInit:!!o.syllabusInit, resTypes:(Array.isArray(o.resTypes)&&o.resTypes.length)?o.resTypes.slice():DEFAULT_RES_TYPES.slice(), resourceTabs:normResourceTabs(o.resourceTabs), customTabs:normCustomTabs(o.customTabs), hiddenBuiltins:Array.isArray(o.hiddenBuiltins)?o.hiddenBuiltins.filter(x=>BUILTIN_IDS.indexOf(x)>=0):[], exams:Array.isArray(o.exams)?o.exams.map(e=>({id:e.id||uid(),name:e.name||'Exam',date:e.date||''})).filter(e=>e.date):[], dashWidgets:Array.isArray(o.dashWidgets)?o.dashWidgets.filter(x=>DASH_WIDGET_IDS.indexOf(x)>=0):DEFAULT_DASH_WIDGETS.slice(), hoursGoal:+o.hoursGoal||0, dashStickies:Array.isArray(o.dashStickies)?o.dashStickies.map(s=>({id:s.id||uid(),text:s.text||'',color:['yellow','green','pink','blue'].indexOf(s.color)>=0?s.color:'yellow'})):[], dashSizes:(o.dashSizes&&typeof o.dashSizes==='object')?Object.keys(o.dashSizes).reduce((m,k)=>{ if(DASH_WIDGET_IDS.indexOf(k)>=0&&(o.dashSizes[k]==='half'||o.dashSizes[k]==='full')) m[k]=o.dashSizes[k]; return m; },{}):{} }; }
+  function normPeriodMap(m){ const out={}; if(m&&typeof m==='object'){ Object.keys(m).forEach(k=>{ const b=m[k]; const tasks=Array.isArray(b&&b.tasks)?b.tasks.map(it=>({id:it.id||uid(),text:it.text||it.title||'',done:!!it.done})):[]; if(tasks.length) out[k]={tasks}; }); } return out; }
+  function migrateState(o){
+    const today=todayStr();
+    const tmpl=(o.settings&&Array.isArray(o.settings.tasks)&&o.settings.tasks.length)?o.settings.tasks:DEFAULT_TASKS;
+    // per-day: legacy fixed-list checks -> per-day task list
+    const days=o.days||{};
+    Object.keys(days).forEach(d=>{ const dd=days[d]; if(dd&&!Array.isArray(dd.tasks)){ if(dd.checks&&Object.keys(dd.checks).length){ const names=tmpl.slice(); Object.keys(dd.checks).forEach(n=>{ if(names.indexOf(n)<0) names.push(n); }); dd.tasks=names.map(n=>({id:uid(),text:n,done:!!dd.checks[n]})); } } });
+    // weekly/monthly all-time lists -> per-week / per-month buckets
+    const weeks=normPeriodMap(o.weeks), months=normPeriodMap(o.months);
+    if(Array.isArray(o.weekly)) o.weekly.forEach(x=>{ const ref=x.deadline||x.created||today; const k=weekStart(ref); (weeks[k]=weeks[k]||{tasks:[]}).tasks.push({id:x.id||uid(),text:x.title||'',done:!!x.done}); });
+    if(Array.isArray(o.monthly)) o.monthly.forEach(x=>{ const ref=x.deadline||x.created||today; const k=ref.slice(0,7); (months[k]=months[k]||{tasks:[]}).tasks.push({id:x.id||uid(),text:x.title||'',done:!!x.done}); });
+    return {days,weeks,months};
+  }
+  function normalize(o){ o=o||{}; const mig=migrateState(o); return { settings:(o.settings&&Array.isArray(o.settings.tasks)&&o.settings.tasks.length)?o.settings:{tasks:DEFAULT_TASKS.slice()}, days:mig.days, weekly:[], monthly:[], weeks:mig.weeks, months:mig.months, series:o.series||[], syllabus:o.syllabus||[], syllabusInit:!!o.syllabusInit, resTypes:(Array.isArray(o.resTypes)&&o.resTypes.length)?o.resTypes.slice():DEFAULT_RES_TYPES.slice(), resourceTabs:normResourceTabs(o.resourceTabs), customTabs:normCustomTabs(o.customTabs), hiddenBuiltins:Array.isArray(o.hiddenBuiltins)?o.hiddenBuiltins.filter(x=>BUILTIN_IDS.indexOf(x)>=0):[], exams:Array.isArray(o.exams)?o.exams.map(e=>({id:e.id||uid(),name:e.name||'Exam',date:e.date||''})).filter(e=>e.date):[], dashWidgets:Array.isArray(o.dashWidgets)?o.dashWidgets.filter(x=>DASH_WIDGET_IDS.indexOf(x)>=0):DEFAULT_DASH_WIDGETS.slice(), hoursGoal:+o.hoursGoal||0, dashStickies:Array.isArray(o.dashStickies)?o.dashStickies.map(s=>({id:s.id||uid(),text:s.text||'',color:['yellow','green','pink','blue'].indexOf(s.color)>=0?s.color:'yellow'})):[], dashSizes:(o.dashSizes&&typeof o.dashSizes==='object')?Object.keys(o.dashSizes).reduce((m,k)=>{ if(DASH_WIDGET_IDS.indexOf(k)>=0&&(o.dashSizes[k]==='half'||o.dashSizes[k]==='full')) m[k]=o.dashSizes[k]; return m; },{}):{} }; }
   let S=blankState();
   let curDate=todayStr();
+  let curWeek=weekStart(todayStr());
+  let curMonth=todayStr().slice(0,7);
   let activeTab='dashboard';
   let resFilter='All';
   let menuOpen=false, menuManage=false;
@@ -460,9 +479,16 @@
   function fmtDateShort(str){ const d=new Date(str+'T00:00:00'); return d.toLocaleDateString(undefined,{day:'numeric',month:'short'}); }
   function weekday(str){ return new Date(str+'T00:00:00').toLocaleDateString(undefined,{weekday:'short'}); }
   function addDays(str,n){ const d=new Date(str+'T00:00:00'); d.setDate(d.getDate()+n); return todayStr(d); }
-  function dayObj(date){ if(!S.days[date]) S.days[date]={checks:{},hours:[],note:''}; return S.days[date]; }
+  function weekStart(dateStr){ const d=new Date((dateStr||todayStr())+'T00:00:00'); const off=(d.getDay()+6)%7; d.setDate(d.getDate()-off); return todayStr(d); }
+  function shiftMonth(key,delta){ const p=key.split('-'); const d=new Date(+p[0],(+p[1]-1)+delta,1); return todayStr(d).slice(0,7); }
+  function monthEnd(key){ const p=key.split('-'); const d=new Date(+p[0],+p[1],0); return todayStr(d); }
+  function periodMap(kind){ return kind==='weekly'?S.weeks:S.months; }
+  function getBucket(kind,key,create){ const m=periodMap(kind); if(!m[key]){ if(!create) return {tasks:[]}; m[key]={tasks:[]}; } return m[key]; }
+  function dayObj(date){ if(!S.days[date]) S.days[date]={checks:{},hours:[],note:'',tasks:[]}; return S.days[date]; }
+  function dayTasks(o){ if(!Array.isArray(o.tasks)) o.tasks=[]; return o.tasks; }
+  function dayTaskStats(date){ const o=S.days[date]; if(!o) return {done:0,tot:0}; if(Array.isArray(o.tasks)) return {done:o.tasks.filter(x=>x.done).length,tot:o.tasks.length}; const ch=o.checks||{}; const ks=Object.keys(ch); return {done:ks.filter(k=>ch[k]).length,tot:ks.length}; }
   function dayHours(date){ const o=S.days[date]; if(!o)return 0; return (o.hours||[]).reduce((a,b)=>a+(parseFloat(b.h)||0),0); }
-  function dayActive(date){ const o=S.days[date]; if(!o)return false; return dayHours(date)>0||Object.values(o.checks||{}).some(Boolean); }
+  function dayActive(date){ const o=S.days[date]; if(!o)return false; if(dayHours(date)>0) return true; if(Array.isArray(o.tasks)) return o.tasks.some(x=>x.done); return Object.values(o.checks||{}).some(Boolean); }
   let toastTimer;
   function toast(msg){ let t=document.querySelector('.toast'); if(!t){t=document.createElement('div');t.className='toast';document.body.appendChild(t);} t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),1900); }
 
@@ -537,8 +563,8 @@
   async function mergeWithCloud(){
     let remote=null;
     try{ remote=await cloudLoad(); }catch(e){ setSyncStatus('error'); return; }
-    const remoteHasData=remote&&(Object.keys(remote.days||{}).length||(remote.weekly||[]).length||(remote.monthly||[]).length||(remote.series||[]).length||(remote.syllabus||[]).length||(remote.customTabs||[]).length);
-    const localHasData=(Object.keys(S.days).length||S.weekly.length||S.monthly.length||S.series.length||S.customTabs.length);
+    const remoteHasData=remote&&(Object.keys(remote.days||{}).length||(remote.weekly||[]).length||(remote.monthly||[]).length||Object.keys(remote.weeks||{}).length||Object.keys(remote.months||{}).length||(remote.series||[]).length||(remote.syllabus||[]).length||(remote.customTabs||[]).length);
+    const localHasData=(Object.keys(S.days).length||Object.keys(S.weeks).length||Object.keys(S.months).length||S.series.length||S.customTabs.length);
     if(remoteHasData){
       const useCloud=!localHasData||confirm("A backup was found in your Google Drive.\n\nOK = Load it onto this device (replaces local data).\nCancel = Keep this device's data and overwrite the cloud copy.");
       if(useCloud){ S=normalize(remote); persistLocal(); setSyncStatus('synced'); } else { await cloudSave(); }
@@ -711,10 +737,9 @@
   function daysUntil(dateStr){ const a=new Date(todayStr()+'T00:00:00'); const b=new Date(dateStr+'T00:00:00'); return Math.round((b-a)/86400000); }
   function collectDeadlines(){
     const today=todayStr(); const out=[];
-    const push=(title,deadline,done,src,srcTab)=>{ if(done||!deadline) return; out.push({title,deadline,src,srcTab,overdue:deadline<today}); };
-    S.weekly.forEach(x=>push(x.title,x.deadline,x.done,'Weekly','weekly'));
-    S.monthly.forEach(x=>push(x.title,x.deadline,x.done,'Monthly','monthly'));
-    S.customTabs.filter(t=>t.type==='targets').forEach(t=>t.items.forEach(x=>push(x.title,x.deadline,x.done,t.name,'custom:'+t.id)));
+    Object.keys(S.weeks).forEach(k=>{ const end=addDays(k,6); S.weeks[k].tasks.forEach(x=>{ if(!x.done) out.push({title:x.text,deadline:end,src:'Weekly',srcTab:'weekly',period:k,overdue:end<today}); }); });
+    Object.keys(S.months).forEach(k=>{ const end=monthEnd(k); S.months[k].tasks.forEach(x=>{ if(!x.done) out.push({title:x.text,deadline:end,src:'Monthly',srcTab:'monthly',period:k,overdue:end<today}); }); });
+    S.customTabs.filter(t=>t.type==='targets').forEach(t=>t.items.forEach(x=>{ if(!x.done&&x.deadline) out.push({title:x.title,deadline:x.deadline,src:t.name,srcTab:'custom:'+t.id,period:'',overdue:x.deadline<today}); }));
     out.sort((a,b)=>(a.deadline||'').localeCompare(b.deadline||''));
     return out;
   }
@@ -744,7 +769,7 @@
         ${hero?`<div class="cd-main"><span class="cd-days">${hero.days}</span><span class="cd-unit">${hero.days===1?'day':'days'} to go</span></div><div class="cd-name">${esc(hero.name)} · ${fmtDate(hero.date)}</div>${others.length?`<div class="cd-others">${others.map(e=>`<span class="pill">${esc(e.name)} · ${e.days}d</span>`).join('')}</div>`:''}`:`<div class="cd-empty-text">Add Prelims / Mains dates to see a live countdown.</div>`}
         ${(dashEdit||!S.exams.length)?`<div class="cd-editor"><div class="add-bar"><div class="field" style="flex:2;min-width:150px;"><label>Exam name</label><input type="text" id="ex-name" placeholder="e.g. Prelims 2026"></div><div class="field" style="min-width:150px;"><label>Date</label><input type="date" id="ex-date"></div><button class="btn" id="ex-add">Add</button></div>${S.exams.length?`<div class="cd-list">${S.exams.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(e=>`<div class="cd-list-row" data-ex="${e.id}"><span>${esc(e.name)} · <span style="color:var(--ink-soft);">${fmtDate(e.date)}</span></span><button class="del ex-del">×</button></div>`).join('')}</div>`:''}</div>`:''}
       </div>`; }
-  function wToday(){ const t=todayStr(); const h=dayHours(t); const c=Object.values(dayObj(t).checks).filter(Boolean).length; const tot=S.settings.tasks.length; return `<div class="stat accent"><div class="label">Today's Study</div><div class="value">${h.toFixed(1)}<small> hrs</small></div><div class="foot">${c}/${tot} tasks done</div></div>`; }
+  function wToday(){ const t=todayStr(); const h=dayHours(t); const st=dayTaskStats(t); return `<div class="stat accent"><div class="label">Today's Study</div><div class="value">${h.toFixed(1)}<small> hrs</small></div><div class="foot">${st.done}/${st.tot} tasks done</div></div>`; }
   function wStreak(){ const t=todayStr(); let streak=0,cur=t; if(!dayActive(cur)) cur=addDays(cur,-1); while(dayActive(cur)){streak++;cur=addDays(cur,-1);} return `<div class="stat"><div class="label">Current Streak</div><div class="value">${streak}<small> ${streak===1?'day':'days'}</small></div><div class="foot">${streak>0?'Keep it going 🔥':'Start today!'}</div></div>`; }
   function wCalendar(){ const t=todayStr(); const cells=[]; for(let i=27;i>=0;i--){const d=addDays(t,-i);cells.push({d,h:dayHours(d)});} const max=Math.max(2,...cells.map(c=>c.h));
     return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Consistency · 4 Weeks</h2></div></div><div class="heat">${cells.map(c=>{const lvl=c.h<=0?0:Math.ceil(Math.min(1,c.h/max)*4);return `<div class="heat-cell lvl${lvl}" title="${c.d}: ${c.h.toFixed(1)}h"></div>`;}).join('')}</div></div>`; }
@@ -752,7 +777,7 @@
     return `<div class="card"><div class="section-head" style="margin-bottom:8px;"><div><h2 style="font-size:18px;">Study Hours · 7 Days</h2></div><span class="pill gold">${wk.toFixed(1)}h</span></div><div class="bars">${days.map(x=>`<div class="bar-col ${x.d===t?'today':''}"><div class="bar" style="height:${Math.round((x.h/maxH)*100)}%">${x.h>0?`<span class="v">${x.h%1===0?x.h:x.h.toFixed(1)}</span>`:''}</div><div class="d">${weekday(x.d)}</div></div>`).join('')}</div></div>`; }
   function wSyllabus(){ const list=S.syllabus||[]; const overall=list.length?Math.round(list.reduce((a,b)=>a+(+b.pct||0),0)/list.length):0; return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Syllabus</h2></div><span class="pill ${overall>=100?'green':overall>=50?'gold':''}">${overall}%</span></div><div class="progress big-progress"><span style="width:${overall}%"></span></div><div style="font-size:12px;color:var(--ink-soft);margin-top:8px;">${list.length?'across '+list.length+' subjects':'Add subjects in the Syllabus tab.'}</div></div>`; }
   function wQuick(){ return `<div class="qa-grid"><button class="qa" data-qa="daily"><span class="qa-ic">📓</span>Log today</button><button class="qa" data-qa="pomo"><span class="qa-ic">🍅</span>Focus timer</button><button class="qa" data-qa="tests"><span class="qa-ic">📝</span>Log a test</button><button class="qa" data-qa="weekly"><span class="qa-ic">🎯</span>Add target</button></div>`; }
-  function wDeadlines(){ const t=todayStr(); const dls=collectDeadlines(); const showD=dls.slice(0,5); const moreD=dls.length-showD.length; return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Deadlines</h2></div>${dls.length?`<span class="pill ${dls.some(d=>d.overdue)?'red':'gold'}">${dls.length} open</span>`:''}</div>${showD.length?showD.map(d=>`<div class="dl-row" data-go="${d.srcTab}"><div class="dl-meta"><div class="dl-title">${esc(d.title)}</div><div class="dl-src">${esc(d.src)}</div></div><span class="pill ${d.overdue?'red':(d.deadline===t?'gold':'')}">${d.overdue?'Overdue':(daysUntil(d.deadline)===0?'Today':'in '+daysUntil(d.deadline)+'d')}</span></div>`).join('')+(moreD>0?`<div class="dl-more">+${moreD} more</div>`:''):`<div class="mini-note">Nothing due — add deadlines to your weekly, monthly or target tabs.</div>`}</div>`; }
+  function wDeadlines(){ const t=todayStr(); const dls=collectDeadlines(); const showD=dls.slice(0,5); const moreD=dls.length-showD.length; return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Deadlines</h2></div>${dls.length?`<span class="pill ${dls.some(d=>d.overdue)?'red':'gold'}">${dls.length} open</span>`:''}</div>${showD.length?showD.map(d=>`<div class="dl-row" data-go="${d.srcTab}" data-period="${esc(d.period||'')}"><div class="dl-meta"><div class="dl-title">${esc(d.title)}</div><div class="dl-src">${esc(d.src)}</div></div><span class="pill ${d.overdue?'red':(d.deadline===t?'gold':'')}">${d.overdue?'Overdue':(daysUntil(d.deadline)===0?'Today':'in '+daysUntil(d.deadline)+'d')}</span></div>`).join('')+(moreD>0?`<div class="dl-more">+${moreD} more</div>`:''):`<div class="mini-note">Nothing due — add deadlines to your weekly, monthly or target tabs.</div>`}</div>`; }
   function wLatest(){ let latest=null; S.series.forEach(s=>s.tests.forEach(t2=>{ if(!latest||(t2.date||'')>(latest.date||'')) latest={...t2,series:s.name}; })); return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Latest Test</h2></div>${latest?`<span class="pill ${(latest.scored/latest.total*100)>=50?'green':(latest.scored/latest.total*100)>=35?'gold':'red'}">${Math.round(latest.scored/latest.total*100)}%</span>`:''}</div>${latest?`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;"><div style="min-width:0;"><div style="font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(latest.topic||latest.series)}</div><div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">${esc(latest.series)} · ${fmtDate(latest.date)}</div></div><div class="score-tag" style="font-size:26px;color:var(--accent);white-space:nowrap;">${latest.scored}<span style="color:var(--ink-faint);font-size:15px;">/${latest.total}</span></div></div><button class="btn ghost sm" id="dash-tests" style="margin-top:14px;">View test series</button>`:`<div class="mini-note">No tests logged yet. <button class="linkbtn" id="dash-tests2">Log your first →</button></div>`}</div>`; }
 
   const WBUILD={focus:wFocus,top3:wTop3,hoursgoal:wHoursGoal,stickies:wStickies,countdown:wCountdown,today:wToday,streak:wStreak,calendar:wCalendar,hours7:wHours7,syllabus:wSyllabus,quick:wQuick,deadlines:wDeadlines,latest:wLatest};
@@ -854,7 +879,7 @@
     el.querySelectorAll('.ex-del').forEach(b=>{ const row=b.closest('[data-ex]'); b.onclick=()=>{ S.exams=S.exams.filter(x=>x.id!==row.dataset.ex); persist(); renderDashboard(); }; });
     // quick actions + deadlines + latest links
     el.querySelectorAll('.qa').forEach(b=>b.onclick=()=>{ const a=b.dataset.qa; if(a==='pomo') goPomodoro(); else goAny(a); });
-    el.querySelectorAll('.dl-row').forEach(r=>r.onclick=()=>{ const id=r.dataset.go; if(id) goAny(id); });
+    el.querySelectorAll('.dl-row').forEach(r=>r.onclick=()=>{ const id=r.dataset.go; const per=r.dataset.period; if(id==='weekly'&&per) curWeek=per; if(id==='monthly'&&per) curMonth=per; if(id) goAny(id); });
     const dt1=document.getElementById('dash-tests'); if(dt1) dt1.onclick=()=>goAny('tests');
     const dt2=document.getElementById('dash-tests2'); if(dt2) dt2.onclick=()=>goAny('tests');
   }
@@ -863,13 +888,18 @@
   /* ===================== DAILY ===================== */
   function renderDaily(){
     const el=document.getElementById('v-daily'); if(!el)return;
-    const o=dayObj(curDate); const tasks=S.settings.tasks; const hrs=dayHours(curDate); const isToday=curDate===todayStr();
+    const o=dayObj(curDate); const tasks=dayTasks(o); const hrs=dayHours(curDate); const isToday=curDate===todayStr();
+    const done=tasks.filter(x=>x.done).length, tot=tasks.length, pct=tot?Math.round(done/tot*100):0;
+    const prev=addDays(curDate,-1); const prevTasks=(S.days[prev]&&Array.isArray(S.days[prev].tasks))?S.days[prev].tasks:[];
     el.innerHTML=`
-      <div class="section-head"><div><h2>Daily Tracker</h2><p>Tick off tasks and log your study hours for each day.</p></div>
+      <div class="section-head"><div><h2>Daily Tracker</h2><p>Set your tasks for the day, tick them off, and log study hours.</p></div>
         <div class="date-nav"><button class="arrow" id="d-prev">‹</button><input type="date" id="d-date" value="${curDate}" style="width:auto;"><button class="arrow" id="d-next">›</button></div></div>
       <div class="grid g-2">
-        <div class="card"><div class="row-flex" style="justify-content:space-between;margin-bottom:6px;"><h2 style="font-family:'Fraunces',serif;font-size:18px;margin:0;">Tasks ${isToday?'· Today':''}</h2><button class="btn ghost sm" id="edit-tasks">Edit list</button></div>
-          <div id="task-list">${tasks.map(name=>{const on=!!o.checks[name];return `<div class="task-row ${on?'done':''}" data-task="${esc(name)}"><div class="chk ${on?'on':''}"></div><div class="name">${esc(name)}</div></div>`;}).join('')}</div></div>
+        <div class="card"><div class="row-flex" style="justify-content:space-between;margin-bottom:10px;"><h2 style="font-family:'Fraunces',serif;font-size:18px;margin:0;">Tasks ${isToday?'· Today':''}</h2><span class="pill ${pct===100&&tot?'green':'gold'}">${done}/${tot}${tot?` · ${pct}%`:''}</span></div>
+          ${tot?`<div class="progress" style="margin-bottom:14px;"><span style="width:${pct}%"></span></div>`:''}
+          <div class="add-bar" style="margin-bottom:10px;"><div class="field" style="flex:2;"><label>Add task for this day</label><input type="text" id="dt-new" placeholder="e.g. Read Polity Ch. 5"></div><button class="btn" id="dt-add">Add</button></div>
+          ${(!tot&&prevTasks.length)?`<button class="btn ghost sm" id="dt-copy" style="margin-bottom:10px;">⧉ Copy ${prevTasks.length} task${prevTasks.length>1?'s':''} from previous day</button>`:''}
+          <div id="task-list">${tasks.map(x=>`<div class="task-row ${x.done?'done':''}" data-id="${x.id}"><div class="chk ${x.done?'on':''}"></div><input type="text" class="dt-text" value="${esc(x.text)}"><button class="del dt-del">×</button></div>`).join('')||'<div class="empty" style="padding:18px;">No tasks yet — add this day\'s tasks above.</div>'}</div></div>
         <div class="card"><div class="row-flex" style="justify-content:space-between;margin-bottom:12px;"><h2 style="font-family:'Fraunces',serif;font-size:18px;margin:0;">Study Hours</h2><span class="pill gold">Total: ${hrs.toFixed(1)} hrs</span></div>
           <div id="hour-list">${(o.hours||[]).map((h,i)=>`<div class="hour-row" data-i="${i}"><select class="h-subj">${SUBJECTS.map(s=>`<option ${s===h.s?'selected':''}>${s}</option>`).join('')}</select><input type="number" class="h-val" min="0" step="0.5" value="${h.h}" placeholder="hrs"><button class="del h-del">×</button></div>`).join('')}</div>
           <button class="btn ghost sm" id="add-hour" style="margin-top:6px;">+ Add hours</button>
@@ -878,7 +908,16 @@
     document.getElementById('d-prev').onclick=()=>{curDate=addDays(curDate,-1);renderDaily();};
     document.getElementById('d-next').onclick=()=>{curDate=addDays(curDate,1);renderDaily();};
     document.getElementById('d-date').onchange=e=>{curDate=e.target.value||todayStr();renderDaily();};
-    el.querySelectorAll('.task-row').forEach(row=>{ row.querySelector('.chk').onclick=()=>{ const name=row.dataset.task; o.checks[name]=!o.checks[name]; persist(); renderDaily(); }; });
+    const addT=()=>{ const n=document.getElementById('dt-new'); const v=n.value.trim(); if(!v){n.focus();return;} tasks.push({id:uid(),text:v,done:false}); persist(); renderDaily(); };
+    document.getElementById('dt-add').onclick=addT;
+    document.getElementById('dt-new').onkeydown=e=>{ if(e.key==='Enter') addT(); };
+    const cp=document.getElementById('dt-copy'); if(cp) cp.onclick=()=>{ prevTasks.forEach(p=>tasks.push({id:uid(),text:p.text,done:false})); persist(); renderDaily(); toast('Tasks copied'); };
+    el.querySelectorAll('.task-row').forEach(row=>{ const id=row.dataset.id; const it=tasks.find(x=>x.id===id);
+      row.querySelector('.chk').onclick=()=>{ it.done=!it.done; persist(); renderDaily(); };
+      row.querySelector('.dt-text').onblur=e=>{ it.text=e.target.value; persist(); };
+      row.querySelector('.dt-text').onkeydown=e=>{ if(e.key==='Enter') e.target.blur(); };
+      row.querySelector('.dt-del').onclick=()=>{ o.tasks=tasks.filter(x=>x.id!==id); persist(); renderDaily(); };
+    });
     document.getElementById('add-hour').onclick=()=>{ o.hours.push({s:SUBJECTS[0],h:1}); persist(); renderDaily(); };
     el.querySelectorAll('.hour-row').forEach(r=>{ const i=+r.dataset.i;
       r.querySelector('.h-subj').onchange=e=>{o.hours[i].s=e.target.value;persist();renderDaily();};
@@ -886,28 +925,41 @@
       r.querySelector('.h-del').onclick=()=>{o.hours.splice(i,1);persist();renderDaily();};
     });
     document.getElementById('d-note').onblur=e=>{o.note=e.target.value;persist();};
-    document.getElementById('edit-tasks').onclick=editTasks;
   }
-  function editTasks(){ uiPrompt({ title:'Edit daily checklist', lead:'One task per line.', multiline:true, value:S.settings.tasks.join('\n'), okText:'Save list', onOk:(v)=>{ const list=v.split('\n').map(s=>s.trim()).filter(Boolean); if(list.length){ S.settings.tasks=list; persist(); renderDaily(); toast('Task list updated'); } } }); }
 
-  /* ===================== TARGETS ===================== */
-  function renderTargets(kind){
+  /* ===================== WEEKLY / MONTHLY (per-period task lists) ===================== */
+  function renderPeriod(kind){
     const el=document.getElementById('v-'+kind); if(!el)return;
-    const list=S[kind]; const done=list.filter(x=>x.done).length,tot=list.length,pct=tot?Math.round(done/tot*100):0;
-    const label=kind==='weekly'?'Weekly':'Monthly'; const today=todayStr();
+    const isW=kind==='weekly'; const key=isW?curWeek:curMonth;
+    const tasks=getBucket(kind,key,false).tasks;
+    const done=tasks.filter(x=>x.done).length, tot=tasks.length, pct=tot?Math.round(done/tot*100):0;
+    let label, isCur, nav;
+    if(isW){ const s=key,e=addDays(key,6); label=`${fmtDateShort(s)} – ${fmtDateShort(e)}, ${new Date(e+'T00:00:00').getFullYear()}`; isCur=key===weekStart(todayStr()); nav=`<input type="date" id="p-date" value="${key}" style="width:auto;">`; }
+    else { label=new Date(key+'-01T00:00:00').toLocaleDateString(undefined,{month:'long',year:'numeric'}); isCur=key===todayStr().slice(0,7); nav=`<input type="month" id="p-month" value="${key}" style="width:auto;">`; }
     el.innerHTML=`
-      <div class="section-head"><div><h2>${label} Targets</h2><p>Add goals with deadlines and track completion.</p></div><span class="pill ${pct===100&&tot?'green':'gold'}">${done}/${tot} done · ${pct}%</span></div>
-      <div class="card" style="margin-bottom:16px;"><div class="progress" style="margin-bottom:16px;"><span style="width:${pct}%"></span></div>
-        <div class="add-bar"><div class="field" style="flex:2;"><label>New ${label.toLowerCase()} target</label><input type="text" id="${kind}-title" placeholder="e.g. Finish Modern History – Spectrum"></div><div class="field"><label>Deadline</label><input type="date" id="${kind}-date"></div><button class="btn" id="${kind}-add">Add target</button></div></div>
-      <div class="card">${tot?list.map(x=>{const overdue=!x.done&&x.deadline&&x.deadline<today;return `<div class="target-row ${x.done?'done':''}" data-id="${x.id}"><div class="chk ${x.done?'on':''}"></div><div class="meta"><div class="t-title">${esc(x.title)}</div><div class="t-sub">${x.deadline?`<span class="pill ${overdue?'red':''}">${overdue?'Overdue · ':'Due '}${fmtDate(x.deadline)}</span>`:'<span class="pill">No deadline</span>'}${x.done?'<span class="pill green">Completed</span>':''}</div></div><button class="del t-del">×</button></div>`;}).join(''):'<div class="empty">No targets yet — add your first one above.</div>'}</div>`;
-    document.getElementById(kind+'-add').onclick=()=>{ const ti=document.getElementById(kind+'-title'); const da=document.getElementById(kind+'-date'); const title=ti.value.trim(); if(!title){ti.focus();return;} list.unshift({id:uid(),title,deadline:da.value||'',done:false,created:today}); persist(); renderTargets(kind); toast('Target added'); };
-    el.querySelectorAll('.target-row').forEach(row=>{ const id=row.dataset.id; const item=list.find(x=>x.id===id);
-      row.querySelector('.chk').onclick=()=>{item.done=!item.done;persist();renderTargets(kind);};
-      row.querySelector('.t-del').onclick=()=>{S[kind]=list.filter(x=>x.id!==id);persist();renderTargets(kind);};
+      <div class="section-head"><div><h2>${isW?'Weekly':'Monthly'} Targets</h2><p>${label}${isCur?(isW?' · This week':' · This month'):''}</p></div>
+        <div class="date-nav"><button class="arrow" id="p-prev">‹</button>${nav}<button class="arrow" id="p-next">›</button></div></div>
+      <div class="card" style="margin-bottom:16px;"><div class="row-flex" style="justify-content:space-between;margin-bottom:12px;"><span style="font-weight:600;">Completion</span><span class="pill ${pct===100&&tot?'green':'gold'}">${done}/${tot}${tot?` · ${pct}%`:''}</span></div>
+        <div class="progress" style="margin-bottom:16px;"><span style="width:${pct}%"></span></div>
+        <div class="add-bar"><div class="field" style="flex:2;"><label>New ${isW?'weekly':'monthly'} target</label><input type="text" id="p-new" placeholder="${isW?'e.g. Finish Modern History':'e.g. Complete Economy revision'}"></div><button class="btn" id="p-add">Add target</button></div></div>
+      <div class="card">${tot?tasks.map(x=>`<div class="task-row ${x.done?'done':''}" data-id="${x.id}"><div class="chk ${x.done?'on':''}"></div><input type="text" class="dt-text" value="${esc(x.text)}"><button class="del dt-del">×</button></div>`).join(''):`<div class="empty" style="padding:18px;">No targets for this ${isW?'week':'month'} yet — add one above.</div>`}</div>`;
+    const re=()=>renderPeriod(kind);
+    document.getElementById('p-prev').onclick=()=>{ if(isW) curWeek=weekStart(addDays(curWeek,-7)); else curMonth=shiftMonth(curMonth,-1); re(); };
+    document.getElementById('p-next').onclick=()=>{ if(isW) curWeek=weekStart(addDays(curWeek,7)); else curMonth=shiftMonth(curMonth,1); re(); };
+    if(isW){ const di=document.getElementById('p-date'); if(di) di.onchange=e=>{ if(e.target.value){ curWeek=weekStart(e.target.value); re(); } }; }
+    else { const mi=document.getElementById('p-month'); if(mi) mi.onchange=e=>{ if(e.target.value){ curMonth=e.target.value; re(); } }; }
+    const addT=()=>{ const n=document.getElementById('p-new'); const v=n.value.trim(); if(!v){n.focus();return;} getBucket(kind,key,true).tasks.push({id:uid(),text:v,done:false}); persist(); re(); toast('Target added'); };
+    document.getElementById('p-add').onclick=addT;
+    document.getElementById('p-new').onkeydown=e=>{ if(e.key==='Enter') addT(); };
+    el.querySelectorAll('.task-row').forEach(row=>{ const id=row.dataset.id; const it=tasks.find(x=>x.id===id);
+      row.querySelector('.chk').onclick=()=>{ it.done=!it.done; persist(); re(); };
+      row.querySelector('.dt-text').onblur=e=>{ it.text=e.target.value; persist(); };
+      row.querySelector('.dt-text').onkeydown=e=>{ if(e.key==='Enter') e.target.blur(); };
+      row.querySelector('.dt-del').onclick=()=>{ const b=getBucket(kind,key,false); b.tasks=tasks.filter(x=>x.id!==id); if(periodMap(kind)[key]) periodMap(kind)[key].tasks=b.tasks; persist(); re(); };
     });
   }
-  function renderWeekly(){ renderTargets('weekly'); }
-  function renderMonthly(){ renderTargets('monthly'); }
+  function renderWeekly(){ renderPeriod('weekly'); }
+  function renderMonthly(){ renderPeriod('monthly'); }
 
   /* ===================== TEST SERIES ===================== */
   function renderTests(){
