@@ -1060,23 +1060,24 @@
     const tasks=getBucket(kind,key,false).tasks;
     const done=tasks.filter(x=>x.done).length, tot=tasks.length, pct=tot?Math.round(done/tot*100):0;
     let label, isCur, nav;
-    if(isW){ const s=key,e=addDays(key,6); label=`${fmtDateShort(s)} – ${fmtDateShort(e)}, ${new Date(e+'T00:00:00').getFullYear()}`; isCur=key===weekStart(todayStr()); nav=`<input type="date" id="p-date" value="${key}" style="width:auto;">`; }
-    else { label=new Date(key+'-01T00:00:00').toLocaleDateString(undefined,{month:'long',year:'numeric'}); isCur=key===todayStr().slice(0,7); nav=`<input type="month" id="p-month" value="${key}" style="width:auto;">`; }
+    if(isW){ const s=key,e=addDays(key,6); label=`${fmtDateShort(s)} – ${fmtDateShort(e)}, ${new Date(e+'T00:00:00').getFullYear()}`; isCur=key===weekStart(todayStr()); nav=`<input type="date" class="p-date" value="${key}" style="width:auto;">`; }
+    else { label=new Date(key+'-01T00:00:00').toLocaleDateString(undefined,{month:'long',year:'numeric'}); isCur=key===todayStr().slice(0,7); nav=`<input type="month" class="p-month" value="${key}" style="width:auto;">`; }
     el.innerHTML=`
       <div class="section-head"><div><h2>${isW?'Weekly':'Monthly'} Targets</h2><p>${label}${isCur?(isW?' · This week':' · This month'):''}</p></div>
-        <div class="date-nav"><button class="arrow" id="p-prev">‹</button>${nav}<button class="arrow" id="p-next">›</button></div></div>
+        <div class="date-nav"><button class="arrow p-prev">‹</button>${nav}<button class="arrow p-next">›</button></div></div>
       <div class="card" style="margin-bottom:16px;"><div class="row-flex" style="justify-content:space-between;margin-bottom:12px;"><span style="font-weight:600;">Completion</span><span class="pill ${pct===100&&tot?'green':'gold'}">${done}/${tot}${tot?` · ${pct}%`:''}</span></div>
         <div class="progress" style="margin-bottom:16px;"><span style="width:${pct}%"></span></div>
-        <div class="add-bar"><div class="field" style="flex:2;"><label>New ${isW?'weekly':'monthly'} target</label><input type="text" id="p-new" placeholder="${isW?'e.g. Finish Modern History':'e.g. Complete Economy revision'}"></div><button class="btn" id="p-add">Add target</button></div></div>
+        <div class="add-bar"><div class="field" style="flex:2;"><label>New ${isW?'weekly':'monthly'} target</label><input type="text" class="p-new" placeholder="${isW?'e.g. Finish Modern History':'e.g. Complete Economy revision'}"></div><button class="btn p-add">Add target</button></div></div>
       <div class="card">${tot?tasks.map(x=>`<div class="task-row ${x.done?'done':''}" data-id="${x.id}"><div class="chk ${x.done?'on':''}"></div><input type="text" class="dt-text" value="${esc(x.text)}"><button class="del dt-del">×</button></div>`).join(''):`<div class="empty" style="padding:18px;">No targets for this ${isW?'week':'month'} yet — add one above.</div>`}</div>`;
     const re=()=>renderPeriod(kind);
-    document.getElementById('p-prev').onclick=()=>{ if(isW) curWeek=weekStart(addDays(curWeek,-7)); else curMonth=shiftMonth(curMonth,-1); re(); };
-    document.getElementById('p-next').onclick=()=>{ if(isW) curWeek=weekStart(addDays(curWeek,7)); else curMonth=shiftMonth(curMonth,1); re(); };
-    if(isW){ const di=document.getElementById('p-date'); if(di) di.onchange=e=>{ if(e.target.value){ curWeek=weekStart(e.target.value); re(); } }; }
-    else { const mi=document.getElementById('p-month'); if(mi) mi.onchange=e=>{ if(e.target.value){ curMonth=e.target.value; re(); } }; }
-    const addT=()=>{ const n=document.getElementById('p-new'); const v=n.value.trim(); if(!v){n.focus();return;} getBucket(kind,key,true).tasks.push({id:uid(),text:v,done:false}); persist(); re(); toast('Target added'); };
-    document.getElementById('p-add').onclick=addT;
-    document.getElementById('p-new').onkeydown=e=>{ if(e.key==='Enter') addT(); };
+    const q=sel=>el.querySelector(sel);
+    q('.p-prev').onclick=()=>{ if(isW) curWeek=weekStart(addDays(curWeek,-7)); else curMonth=shiftMonth(curMonth,-1); re(); };
+    q('.p-next').onclick=()=>{ if(isW) curWeek=weekStart(addDays(curWeek,7)); else curMonth=shiftMonth(curMonth,1); re(); };
+    if(isW){ const di=q('.p-date'); if(di) di.onchange=e=>{ if(e.target.value){ curWeek=weekStart(e.target.value); re(); } }; }
+    else { const mi=q('.p-month'); if(mi) mi.onchange=e=>{ if(e.target.value){ curMonth=e.target.value; re(); } }; }
+    const addT=()=>{ const n=q('.p-new'); const v=n.value.trim(); if(!v){n.focus();return;} getBucket(kind,key,true).tasks.push({id:uid(),text:v,done:false}); persist(); re(); toast('Target added'); };
+    q('.p-add').onclick=addT;
+    q('.p-new').onkeydown=e=>{ if(e.key==='Enter') addT(); };
     el.querySelectorAll('.task-row').forEach(row=>{ const id=row.dataset.id; const it=tasks.find(x=>x.id===id);
       row.querySelector('.chk').onclick=()=>{ it.done=!it.done; persist(); re(); };
       row.querySelector('.dt-text').onblur=e=>{ it.text=e.target.value; persist(); };
