@@ -386,6 +386,15 @@
   .pn-date{font-size:11px;color:var(--ink-faint);}
   .pn-foot .linkbtn{font-size:11.5px;padding:0;}
   .pn-foot .del{position:static;width:26px;height:26px;font-size:16px;}
+
+  /* ---- rich notes (image + link) ---- */
+  .nt-imgwrap{position:relative;margin-top:10px;}
+  .nt-img{width:100%;max-height:200px;object-fit:cover;border-radius:10px;display:block;border:1px solid var(--line);}
+  .nt-imgdel{position:absolute;top:6px;right:6px;border:none;background:rgba(0,0,0,.55);color:#fff;border-radius:8px;width:26px;height:26px;font-size:15px;line-height:1;}
+  .nt-linkrow{display:flex;align-items:center;gap:8px;margin-top:8px;}
+  .nt-link{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .nt-linkdel{border:1px solid var(--line);background:var(--card-2);color:var(--ink-soft);border-radius:8px;width:24px;height:24px;font-size:14px;line-height:1;flex:0 0 auto;}
+  .nt-tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
 </style>
 </head>
 <body>
@@ -426,6 +435,7 @@
     {id:'hoursgoal', label:'Daily Hours Goal',    size:'half', star:true},
     {id:'stickies',  label:'Sticky Notes',        size:'full', star:true},
     {id:'quote',     label:'Motivation Quote',    size:'full', star:true},
+    {id:'coi',       label:'COI Articles',         size:'full', star:true},
     {id:'photonotes',label:'Photo Notes',         size:'full', star:true},
     {id:'countdown', label:'Exam countdown',      size:'full'},
     {id:'today',     label:"Today's study",       size:'half'},
@@ -485,10 +495,47 @@
     "Focus on the next task, not the whole mountain.",
     "Your future self is watching. Make them proud."
   ];
+  const COI_ARTICLES=[
+    "Article 1 — India, that is Bharat, shall be a Union of States.",
+    "Article 12 — Defines 'the State' for the purpose of Fundamental Rights.",
+    "Article 13 — Laws inconsistent with Fundamental Rights are void.",
+    "Article 14 — Equality before law and equal protection of the laws.",
+    "Article 15 — Prohibits discrimination on grounds of religion, race, caste, sex or place of birth.",
+    "Article 16 — Equality of opportunity in matters of public employment.",
+    "Article 17 — Abolition of untouchability.",
+    "Article 19 — Protects six freedoms incl. speech & expression, assembly, movement.",
+    "Article 21 — Protection of life and personal liberty.",
+    "Article 21A — Right to free and compulsory education for ages 6–14.",
+    "Article 22 — Protection against arbitrary arrest and detention.",
+    "Article 23 — Prohibition of human trafficking and forced labour.",
+    "Article 24 — Prohibition of child labour in factories and hazardous work.",
+    "Article 25 — Freedom of conscience and free profession of religion.",
+    "Article 30 — Right of minorities to establish and administer educational institutions.",
+    "Article 32 — Right to constitutional remedies — Ambedkar called it the 'heart and soul'.",
+    "Article 36–51 — Directive Principles of State Policy (DPSP).",
+    "Article 40 — Organisation of village panchayats.",
+    "Article 44 — Uniform Civil Code for citizens.",
+    "Article 50 — Separation of the judiciary from the executive.",
+    "Article 51A — Fundamental Duties of citizens.",
+    "Article 72 — Pardoning powers of the President.",
+    "Article 74 — Council of Ministers to aid and advise the President.",
+    "Article 110 — Definition of a Money Bill.",
+    "Article 123 — President's power to promulgate ordinances.",
+    "Article 143 — Advisory jurisdiction of the Supreme Court.",
+    "Article 148 — Comptroller and Auditor-General of India (CAG).",
+    "Article 226 — Power of High Courts to issue writs.",
+    "Article 280 — Finance Commission.",
+    "Article 312 — All-India Services.",
+    "Article 324 — Superintendence of elections by the Election Commission.",
+    "Article 352 — National Emergency.",
+    "Article 356 — President's Rule in a State.",
+    "Article 360 — Financial Emergency.",
+    "Article 368 — Power of Parliament to amend the Constitution."
+  ];
   function hexToRgb(h){ h=(h||'').replace('#',''); if(h.length===3)h=h.split('').map(c=>c+c).join(''); const n=parseInt(h||'0',16); return [(n>>16)&255,(n>>8)&255,n&255]; }
   function rgbToHex(r){ return '#'+r.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join(''); }
   function mix(a,b,t){ const A=hexToRgb(a),B=hexToRgb(b); return rgbToHex([A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t]); }
-  function blankState(){ return { settings:{tasks:DEFAULT_TASKS.slice()}, appName:'Track your day', theme:{mode:'light',accent:'terracotta'}, days:{}, weekly:[], monthly:[], weeks:{}, months:{}, series:[], syllabus:[], syllabusInit:false, resTypes:DEFAULT_RES_TYPES.slice(), resourceTabs:defaultResourceTabs(), customTabs:[], hiddenBuiltins:[], exams:[], dashWidgets:DEFAULT_DASH_WIDGETS.slice(), hoursGoal:0, dashStickies:[], dashSizes:{}, photoNotes:[], customQuotes:[] }; }
+  function blankState(){ return { settings:{tasks:DEFAULT_TASKS.slice()}, appName:'Track your day', theme:{mode:'light',accent:'terracotta'}, days:{}, weekly:[], monthly:[], weeks:{}, months:{}, series:[], syllabus:[], syllabusInit:false, resTypes:DEFAULT_RES_TYPES.slice(), resourceTabs:defaultResourceTabs(), customTabs:[], hiddenBuiltins:[], exams:[], dashWidgets:DEFAULT_DASH_WIDGETS.slice(), hoursGoal:0, dashStickies:[], dashSizes:{}, photoNotes:[], customQuotes:[], customCOI:[] }; }
   function normCustomTabs(ct){
     if(!Array.isArray(ct)) return [];
     return ct.map(t=>{
@@ -502,9 +549,9 @@
         case 'targets': return {...base, items:Array.isArray(t.items)?t.items.map(i=>({id:i.id||uid(),title:i.title||'',deadline:i.deadline||'',done:!!i.done,created:i.created||todayStr()})):[]};
         case 'progress': return {...base, items:Array.isArray(t.items)?t.items.map(i=>({id:i.id||uid(),name:i.name||'',pct:Math.max(0,Math.min(100,+i.pct||0))})):[]};
         case 'counter': return {...base, items:Array.isArray(t.items)?t.items.map(i=>({id:i.id||uid(),name:i.name||'',count:+i.count||0,step:+i.step||1,goal:(i.goal===''||i.goal==null)?'':+i.goal})):[]};
-        case 'timer': return {...base, minutes:+t.minutes||10, seconds:+t.seconds||0};
-        case 'pomodoro': return {...base, focus:+t.focus||25, brk:+t.brk||5, longBrk:+t.longBrk||15, rounds:+t.rounds||4};
-        case 'notes': return {...base, notes:Array.isArray(t.notes)?t.notes.map(n=>({id:n.id||uid(),title:n.title||'',body:n.body||'',ts:n.ts||Date.now()})):[]};
+        case 'timer': return {...base, minutes:+t.minutes||10, seconds:+t.seconds||0, rt:(t.rt&&typeof t.rt==='object')?t.rt:null};
+        case 'pomodoro': return {...base, focus:+t.focus||25, brk:+t.brk||5, longBrk:+t.longBrk||15, rounds:+t.rounds||4, rt:(t.rt&&typeof t.rt==='object')?t.rt:null};
+        case 'notes': return {...base, notes:Array.isArray(t.notes)?t.notes.map(n=>({id:n.id||uid(),title:n.title||'',body:n.body||'',img:n.img||'',link:(n.link&&n.link.url)?{url:String(n.link.url),label:n.link.label||''}:null,ts:n.ts||Date.now()})):[]};
         default: return null;
       }
     }).filter(Boolean);
@@ -522,7 +569,7 @@
     if(Array.isArray(o.monthly)) o.monthly.forEach(x=>{ const ref=x.deadline||x.created||today; const k=ref.slice(0,7); (months[k]=months[k]||{tasks:[]}).tasks.push({id:x.id||uid(),text:x.title||'',done:!!x.done}); });
     return {days,weeks,months};
   }
-  function normalize(o){ o=o||{}; const mig=migrateState(o); const th=(o.theme&&typeof o.theme==='object')?o.theme:{}; return { settings:(o.settings&&Array.isArray(o.settings.tasks)&&o.settings.tasks.length)?o.settings:{tasks:DEFAULT_TASKS.slice()}, appName:(typeof o.appName==='string'&&o.appName.trim())?o.appName.trim().slice(0,40):'Track your day', theme:{mode:th.mode==='dark'?'dark':'light', accent:THEMES[th.accent]?th.accent:'terracotta'}, days:mig.days, weekly:[], monthly:[], weeks:mig.weeks, months:mig.months, series:o.series||[], syllabus:o.syllabus||[], syllabusInit:!!o.syllabusInit, resTypes:(Array.isArray(o.resTypes)&&o.resTypes.length)?o.resTypes.slice():DEFAULT_RES_TYPES.slice(), resourceTabs:normResourceTabs(o.resourceTabs), customTabs:normCustomTabs(o.customTabs), hiddenBuiltins:Array.isArray(o.hiddenBuiltins)?o.hiddenBuiltins.filter(x=>BUILTIN_IDS.indexOf(x)>=0):[], exams:Array.isArray(o.exams)?o.exams.map(e=>({id:e.id||uid(),name:e.name||'Exam',date:e.date||''})).filter(e=>e.date):[], dashWidgets:Array.isArray(o.dashWidgets)?o.dashWidgets.filter(x=>DASH_WIDGET_IDS.indexOf(x)>=0):DEFAULT_DASH_WIDGETS.slice(), hoursGoal:+o.hoursGoal||0, dashStickies:Array.isArray(o.dashStickies)?o.dashStickies.map(s=>({id:s.id||uid(),text:s.text||'',color:['yellow','green','pink','blue'].indexOf(s.color)>=0?s.color:'yellow'})):[], dashSizes:(o.dashSizes&&typeof o.dashSizes==='object')?Object.keys(o.dashSizes).reduce((m,k)=>{ if(DASH_WIDGET_IDS.indexOf(k)>=0&&(o.dashSizes[k]==='half'||o.dashSizes[k]==='full')) m[k]=o.dashSizes[k]; return m; },{}):{}, photoNotes:Array.isArray(o.photoNotes)?o.photoNotes.map(p=>({id:p.id||uid(),img:p.img||'',text:p.text||'',ts:p.ts||Date.now()})).filter(p=>p.img):[], customQuotes:Array.isArray(o.customQuotes)?o.customQuotes.map(q=>String(q||'').trim()).filter(Boolean):[] }; }
+  function normalize(o){ o=o||{}; const mig=migrateState(o); const th=(o.theme&&typeof o.theme==='object')?o.theme:{}; return { settings:(o.settings&&Array.isArray(o.settings.tasks)&&o.settings.tasks.length)?o.settings:{tasks:DEFAULT_TASKS.slice()}, appName:(typeof o.appName==='string'&&o.appName.trim())?o.appName.trim().slice(0,40):'Track your day', theme:{mode:th.mode==='dark'?'dark':'light', accent:THEMES[th.accent]?th.accent:'terracotta'}, days:mig.days, weekly:[], monthly:[], weeks:mig.weeks, months:mig.months, series:o.series||[], syllabus:o.syllabus||[], syllabusInit:!!o.syllabusInit, resTypes:(Array.isArray(o.resTypes)&&o.resTypes.length)?o.resTypes.slice():DEFAULT_RES_TYPES.slice(), resourceTabs:normResourceTabs(o.resourceTabs), customTabs:normCustomTabs(o.customTabs), hiddenBuiltins:Array.isArray(o.hiddenBuiltins)?o.hiddenBuiltins.filter(x=>BUILTIN_IDS.indexOf(x)>=0):[], exams:Array.isArray(o.exams)?o.exams.map(e=>({id:e.id||uid(),name:e.name||'Exam',date:e.date||''})).filter(e=>e.date):[], dashWidgets:Array.isArray(o.dashWidgets)?o.dashWidgets.filter(x=>DASH_WIDGET_IDS.indexOf(x)>=0):DEFAULT_DASH_WIDGETS.slice(), hoursGoal:+o.hoursGoal||0, dashStickies:Array.isArray(o.dashStickies)?o.dashStickies.map(s=>({id:s.id||uid(),text:s.text||'',color:['yellow','green','pink','blue'].indexOf(s.color)>=0?s.color:'yellow'})):[], dashSizes:(o.dashSizes&&typeof o.dashSizes==='object')?Object.keys(o.dashSizes).reduce((m,k)=>{ if(DASH_WIDGET_IDS.indexOf(k)>=0&&(o.dashSizes[k]==='half'||o.dashSizes[k]==='full')) m[k]=o.dashSizes[k]; return m; },{}):{}, photoNotes:Array.isArray(o.photoNotes)?o.photoNotes.map(p=>({id:p.id||uid(),img:p.img||'',text:p.text||'',ts:p.ts||Date.now()})).filter(p=>p.img):[], customQuotes:Array.isArray(o.customQuotes)?o.customQuotes.map(q=>String(q||'').trim()).filter(Boolean):[], customCOI:Array.isArray(o.customCOI)?o.customCOI.map(q=>String(q||'').trim()).filter(Boolean):[] }; }
   let S=blankState();
   let curDate=todayStr();
   let curWeek=weekStart(todayStr());
@@ -532,6 +579,7 @@
   let menuOpen=false, menuManage=false;
   let dashEdit=false, dashCustomize=false, dashArrange=false;
   let quoteCur=-1;
+  let coiCur=-1;
   const runtime={}; // live timer/pomodoro state keyed by tab id (not persisted)
 
   const cloud={ clientId:'', connected:false, status:'local', saveTimer:null };
@@ -870,10 +918,14 @@
   function wDeadlines(){ const t=todayStr(); const dls=collectDeadlines(); const showD=dls.slice(0,5); const moreD=dls.length-showD.length; return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Deadlines</h2></div>${dls.length?`<span class="pill ${dls.some(d=>d.overdue)?'red':'gold'}">${dls.length} open</span>`:''}</div>${showD.length?showD.map(d=>`<div class="dl-row" data-go="${d.srcTab}" data-period="${esc(d.period||'')}"><div class="dl-meta"><div class="dl-title">${esc(d.title)}</div><div class="dl-src">${esc(d.src)}</div></div><span class="pill ${d.overdue?'red':(d.deadline===t?'gold':'')}">${d.overdue?'Overdue':(daysUntil(d.deadline)===0?'Today':'in '+daysUntil(d.deadline)+'d')}</span></div>`).join('')+(moreD>0?`<div class="dl-more">+${moreD} more</div>`:''):`<div class="mini-note">Nothing due — add deadlines to your weekly, monthly or target tabs.</div>`}</div>`; }
   function wLatest(){ let latest=null; S.series.forEach(s=>s.tests.forEach(t2=>{ if(!latest||(t2.date||'')>(latest.date||'')) latest={...t2,series:s.name}; })); return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Latest Test</h2></div>${latest?`<span class="pill ${(latest.scored/latest.total*100)>=50?'green':(latest.scored/latest.total*100)>=35?'gold':'red'}">${Math.round(latest.scored/latest.total*100)}%</span>`:''}</div>${latest?`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;"><div style="min-width:0;"><div style="font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(latest.topic||latest.series)}</div><div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">${esc(latest.series)} · ${fmtDate(latest.date)}</div></div><div class="score-tag" style="font-size:26px;color:var(--accent);white-space:nowrap;">${latest.scored}<span style="color:var(--ink-faint);font-size:15px;">/${latest.total}</span></div></div><button class="btn ghost sm" id="dash-tests" style="margin-top:14px;">View test series</button>`:`<div class="mini-note">No tests logged yet. <button class="linkbtn" id="dash-tests2">Log your first →</button></div>`}</div>`; }
 
-  const WBUILD={focus:wFocus,top3:wTop3,hoursgoal:wHoursGoal,stickies:wStickies,quote:wQuote,photonotes:wPhotoNotes,countdown:wCountdown,today:wToday,streak:wStreak,calendar:wCalendar,hours7:wHours7,syllabus:wSyllabus,quick:wQuick,deadlines:wDeadlines,latest:wLatest};
+  const WBUILD={focus:wFocus,top3:wTop3,hoursgoal:wHoursGoal,stickies:wStickies,quote:wQuote,coi:wCOI,photonotes:wPhotoNotes,countdown:wCountdown,today:wToday,streak:wStreak,calendar:wCalendar,hours7:wHours7,syllabus:wSyllabus,quick:wQuick,deadlines:wDeadlines,latest:wLatest};
 
   function quotePool(){ return QUOTES.concat(S.customQuotes||[]); }
-  function wQuote(){ const pool=quotePool(); if(quoteCur<0||quoteCur>=pool.length) quoteCur=Math.floor(Math.random()*pool.length); const q=pool[quoteCur]||pool[0]||'';
+  function coiPool(){ return COI_ARTICLES.concat(S.customCOI||[]); }
+  function wCOI(){ const pool=coiPool(); if(coiCur<0||coiCur>=pool.length) coiCur=Math.floor(Math.random()*pool.length); const a=pool[coiCur]||pool[0]||'';
+    return `<div class="card star-card"><div class="row-flex" style="justify-content:space-between;"><div class="star-label">★ Constitution of India</div><div class="row-flex" style="gap:6px;"><button class="qw-btn" id="coi-add" title="Add your own">✎</button><button class="qw-btn" id="coi-shuffle" title="Another article">🔀</button></div></div>
+      <div class="quote-text" style="font-style:normal;font-size:17px;">${esc(a)}</div>
+      <div class="quote-meta">${pool.length} article${pool.length!==1?'s':''}${(S.customCOI||[]).length?` · ${S.customCOI.length} yours`:''} <button class="linkbtn" id="coi-manage">manage</button></div></div>`; }  function wQuote(){ const pool=quotePool(); if(quoteCur<0||quoteCur>=pool.length) quoteCur=Math.floor(Math.random()*pool.length); const q=pool[quoteCur]||pool[0]||'';
     return `<div class="card star-card"><div class="row-flex" style="justify-content:space-between;"><div class="star-label">★ Motivation</div><div class="row-flex" style="gap:6px;"><button class="qw-btn" id="q-add" title="Add your own">✎</button><button class="qw-btn" id="q-shuffle" title="New quote">🔀</button></div></div>
       <div class="quote-text">“${esc(q)}”</div>
       <div class="quote-meta">${pool.length} quote${pool.length!==1?'s':''}${(S.customQuotes||[]).length?` · ${S.customQuotes.length} yours`:''} <button class="linkbtn" id="q-manage">manage</button></div></div>`; }
@@ -991,6 +1043,10 @@
     const qsh=document.getElementById('q-shuffle'); if(qsh) qsh.onclick=()=>{ const pool=quotePool(); let n=Math.floor(Math.random()*pool.length); if(pool.length>1){ let g=0; while(n===quoteCur&&g++<8) n=Math.floor(Math.random()*pool.length); } quoteCur=n; renderDashboard(); };
     const qad=document.getElementById('q-add'); if(qad) qad.onclick=()=>{ uiPrompt({ title:'Add your quote', label:'Quote / mantra', placeholder:'Type something that motivates you', okText:'Add', onOk:(v)=>{ const q=(v||'').trim(); if(q){ S.customQuotes.push(q); quoteCur=quotePool().length-1; persist(); renderDashboard(); toast('Quote added'); } } }); };
     const qmg=document.getElementById('q-manage'); if(qmg) qmg.onclick=()=>{ uiPrompt({ title:'Your quotes', lead:'One per line. These are added to the rotation alongside the built-in ones.', multiline:true, value:(S.customQuotes||[]).join('\n'), okText:'Save', onOk:(v)=>{ S.customQuotes=v.split('\n').map(s=>s.trim()).filter(Boolean); quoteCur=-1; persist(); renderDashboard(); toast('Quotes updated'); } }); };
+    // COI articles
+    const csh=document.getElementById('coi-shuffle'); if(csh) csh.onclick=()=>{ const pool=coiPool(); let n=Math.floor(Math.random()*pool.length); if(pool.length>1){ let g=0; while(n===coiCur&&g++<8) n=Math.floor(Math.random()*pool.length); } coiCur=n; renderDashboard(); };
+    const cad=document.getElementById('coi-add'); if(cad) cad.onclick=()=>{ uiPrompt({ title:'Add a COI article', label:'Article / point', placeholder:'e.g. Article 21 — Right to life and personal liberty', okText:'Add', onOk:(v)=>{ const q=(v||'').trim(); if(q){ S.customCOI.push(q); coiCur=coiPool().length-1; persist(); renderDashboard(); toast('Article added'); } } }); };
+    const cmg=document.getElementById('coi-manage'); if(cmg) cmg.onclick=()=>{ uiPrompt({ title:'Your COI articles', lead:'One per line. Added to the rotation alongside the built-in articles.', multiline:true, value:(S.customCOI||[]).join('\n'), okText:'Save', onOk:(v)=>{ S.customCOI=v.split('\n').map(s=>s.trim()).filter(Boolean); coiCur=-1; persist(); renderDashboard(); toast('Articles updated'); } }); };
     // photo notes
     const pf=document.getElementById('pn-file'); if(pf) pf.onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; processImage(f, dataUrl=>{ if(!dataUrl){ toast('Could not read image'); return; } S.photoNotes.unshift({id:uid(),img:dataUrl,text:'',ts:Date.now()}); persist(); renderDashboard(); toast('Photo saved'); }); pf.value=''; };
     el.querySelectorAll('.pn-card').forEach(c=>{ const id=c.dataset.id; const p=S.photoNotes.find(x=>x.id===id); if(!p)return;
@@ -1382,13 +1438,23 @@
   /* ---- Notes ---- */
   function renderNotes(tab,el){
     const notes=tab.notes;
-    el.innerHTML=ctabHead(tab,'Free-form note cards for anything.','<button class="btn sm" id="nt-add">+ Note</button>')
-     +`<div class="grid g-2">${notes.length?notes.map(n=>`<div class="card note-card" data-id="${n.id}"><div class="row-flex" style="justify-content:space-between;align-items:center;"><input class="note-title" value="${esc(n.title)}" placeholder="Title"><button class="del nt-del">×</button></div><textarea class="nt-body" placeholder="Write here…" style="min-height:120px;margin-top:8px;">${esc(n.body)}</textarea></div>`).join(''):'<div class="card" style="grid-column:1/-1;"><div class="empty">No notes yet — tap “+ Note”.</div></div>'}</div>`;
-    document.getElementById('nt-add').onclick=()=>{ notes.unshift({id:uid(),title:'',body:'',ts:Date.now()}); persist(); renderCustom(); };
-    el.querySelectorAll('.note-card').forEach(row=>{ const id=row.dataset.id; const n=notes.find(x=>x.id===id);
+    el.innerHTML=ctabHead(tab,'Rich note cards — text, a photo and a link in each note.','<button class="btn sm" id="nt-add">+ Note</button>')
+     +`<div class="grid g-2">${notes.length?notes.map(n=>`<div class="card note-card" data-id="${n.id}">
+          <div class="row-flex" style="justify-content:space-between;align-items:center;"><input class="note-title" value="${esc(n.title)}" placeholder="Title"><button class="del nt-del">×</button></div>
+          ${n.img?`<div class="nt-imgwrap"><img class="nt-img" src="${n.img}" alt="note image"><button class="nt-imgdel" title="Remove image">×</button></div>`:''}
+          <textarea class="nt-body" placeholder="Write here…" style="min-height:90px;margin-top:8px;">${esc(n.body)}</textarea>
+          ${n.link?`<div class="nt-linkrow"><a class="nt-link" href="${esc(n.link.url)}" target="_blank" rel="noopener">🔗 ${esc(n.link.label||n.link.url)}</a><button class="nt-linkdel" title="Remove link">×</button></div>`:''}
+          <div class="nt-tools"><label class="btn ghost sm" for="nt-file-${n.id}" style="cursor:pointer;">📷 ${n.img?'Replace':'Add'} pic</label><input type="file" id="nt-file-${n.id}" accept="image/*" capture="environment" style="display:none;"><button class="btn ghost sm nt-link-add">🔗 ${n.link?'Edit':'Add'} link</button></div>
+        </div>`).join(''):'<div class="card" style="grid-column:1/-1;"><div class="empty">No notes yet — tap “+ Note”. Each note can hold text, a photo and a link.</div></div>'}</div>`;
+    document.getElementById('nt-add').onclick=()=>{ notes.unshift({id:uid(),title:'',body:'',img:'',link:null,ts:Date.now()}); persist(); renderCustom(); };
+    el.querySelectorAll('.note-card').forEach(row=>{ const id=row.dataset.id; const n=notes.find(x=>x.id===id); if(!n)return;
       const ti=row.querySelector('.note-title'); ti.oninput=e=>{ n.title=e.target.value; }; ti.onblur=()=>persist();
       const bd=row.querySelector('.nt-body'); bd.oninput=e=>{ n.body=e.target.value; }; bd.onblur=()=>persist();
       row.querySelector('.nt-del').onclick=()=>{ tab.notes=notes.filter(x=>x.id!==id); persist(); renderCustom(); };
+      const fi=row.querySelector('#nt-file-'+id); if(fi) fi.onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; processImage(f, d=>{ if(!d){toast('Could not read image');return;} n.img=d; persist(); renderCustom(); toast('Image added'); }); fi.value=''; };
+      const idel=row.querySelector('.nt-imgdel'); if(idel) idel.onclick=()=>{ n.img=''; persist(); renderCustom(); };
+      const la=row.querySelector('.nt-link-add'); if(la) la.onclick=()=>{ uiPrompt({ title:n.link?'Edit link':'Add link', label:'Link (URL)', placeholder:'https://…', value:n.link?n.link.url:'', okText:'Save', onOk:(v)=>{ let url=(v||'').trim(); if(!url) return; if(!/^https?:\/\//i.test(url)) url='https://'+url; const label=url.replace(/^https?:\/\//i,'').replace(/\/$/,'').slice(0,60); n.link={url,label}; persist(); renderCustom(); toast('Link saved'); } }); };
+      const ldel=row.querySelector('.nt-linkdel'); if(ldel) ldel.onclick=()=>{ n.link=null; persist(); renderCustom(); };
     });
   }
 
@@ -1399,37 +1465,39 @@
   function ringSVG(id,frac){ const r=54,c=2*Math.PI*r,off=c*(1-Math.max(0,Math.min(1,frac))); return `<svg width="160" height="160" viewBox="0 0 130 130" style="max-width:48vw;"><circle cx="65" cy="65" r="${r}" fill="none" stroke="var(--line)" stroke-width="8"/><circle id="${id}" cx="65" cy="65" r="${r}" fill="none" stroke="var(--accent)" stroke-width="8" stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 65 65)" style="transition:stroke-dashoffset .25s linear;"/></svg>`; }
   function setRing(c,frac){ if(!c)return; const r=54,cir=2*Math.PI*r; c.style.strokeDashoffset=(cir*(1-Math.max(0,Math.min(1,frac)))).toFixed(1); }
   function stopRuntime(id){ const rt=runtime[id]; if(rt&&rt.iv){ clearInterval(rt.iv); } delete runtime[id]; }
+  function saveRt(tab){ const rt=runtime[tab.id]; if(!rt){ tab.rt=null; persist(); return; } const c={}; for(const k in rt){ if(k!=='iv') c[k]=rt[k]; } tab.rt=c; persist(); }
 
   /* ---- Timer & Stopwatch ---- */
   function renderTimer(tab,el){
     let rt=runtime[tab.id];
-    if(!rt){ const tot=tab.minutes*60+tab.seconds; rt=runtime[tab.id]={mode:'cd',cdTotal:tot,cdRemaining:tot,cdRunning:false,cdEndTs:0,swAccum:0,swRunning:false,swStartTs:0,iv:null}; }
+    if(!rt){ if(tab.rt){ rt=runtime[tab.id]=Object.assign({iv:null}, tab.rt); } else { const tot=tab.minutes*60+tab.seconds; rt=runtime[tab.id]={mode:'cd',cdTotal:tot,cdRemaining:tot,cdRunning:false,cdEndTs:0,swAccum:0,swRunning:false,swStartTs:0,iv:null}; } }
     const isCd=rt.mode==='cd';
     const running=isCd?rt.cdRunning:rt.swRunning;
-    el.innerHTML=ctabHead(tab,'Countdown timer and a stopwatch in one tab.','')
+    el.innerHTML=ctabHead(tab,'Countdown timer and a stopwatch in one tab. Keeps running even if you refresh or close the tab.','')
      +`<div class="card"><div class="row-flex" style="justify-content:center;margin-bottom:4px;gap:6px;">
           <button class="pill ${isCd?'gold':''}" data-mode="cd" style="cursor:pointer;">Countdown</button>
           <button class="pill ${!isCd?'gold':''}" data-mode="sw" style="cursor:pointer;">Stopwatch</button>
         </div>
         <div class="timer-display"><div class="ring-wrap">${ringSVG('tmr-ring-'+tab.id,1)}<div class="ring-label"><div class="mode">${isCd?'Time left':'Elapsed'}</div><div class="clock mono-time" id="tmr-clock-${tab.id}">00:00</div></div></div></div>
         ${isCd?`<div class="add-bar" style="justify-content:center;"><div class="field" style="max-width:90px;"><label>Min</label><input type="number" id="tmr-min" min="0" value="${tab.minutes}" ${running?'disabled':''}></div><div class="field" style="max-width:90px;"><label>Sec</label><input type="number" id="tmr-sec" min="0" max="59" value="${tab.seconds}" ${running?'disabled':''}></div></div>`:''}
-        <div class="timer-ctrls"><button class="btn" id="tmr-start">${running?'Pause':'Start'}</button><button class="btn ghost" id="tmr-reset">Reset</button></div></div>`;
-    el.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{ rt.mode=b.dataset.mode; renderCustom(); });
+        <div class="timer-ctrls"><button class="btn" id="tmr-start">${running?'Pause':'Start'}</button><button class="btn ghost" id="tmr-reset">Reset</button></div>
+        ${running?'<div class="mini-note" style="text-align:center;margin-top:10px;">Running — safe to refresh or close; it keeps counting.</div>':''}</div>`;
+    el.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{ rt.mode=b.dataset.mode; saveRt(tab); renderCustom(); });
     if(isCd){
       const mi=document.getElementById('tmr-min'), se=document.getElementById('tmr-sec');
-      const applySet=()=>{ tab.minutes=Math.max(0,+mi.value||0); tab.seconds=Math.max(0,Math.min(59,+se.value||0)); rt.cdRunning=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} rt.cdTotal=rt.cdRemaining=tab.minutes*60+tab.seconds; persist(); renderCustom(); };
+      const applySet=()=>{ tab.minutes=Math.max(0,+mi.value||0); tab.seconds=Math.max(0,Math.min(59,+se.value||0)); rt.cdRunning=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} rt.cdTotal=rt.cdRemaining=tab.minutes*60+tab.seconds; saveRt(tab); renderCustom(); };
       mi.onchange=applySet; se.onchange=applySet;
     }
     document.getElementById('tmr-start').onclick=()=>{
       if(isCd){
-        if(rt.cdRunning){ rt.cdRunning=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} renderCustom(); }
-        else { if(rt.cdRemaining<=0) rt.cdRemaining=rt.cdTotal=tab.minutes*60+tab.seconds; if(rt.cdRemaining<=0){toast('Set a duration first');return;} rt.cdRunning=true; rt.cdEndTs=Date.now()+rt.cdRemaining*1000; if(!rt.iv) rt.iv=setInterval(()=>timerTick(tab),250); renderCustom(); }
+        if(rt.cdRunning){ rt.cdRemaining=Math.max(0,(rt.cdEndTs-Date.now())/1000); rt.cdRunning=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} saveRt(tab); renderCustom(); }
+        else { if(rt.cdRemaining<=0) rt.cdRemaining=rt.cdTotal=tab.minutes*60+tab.seconds; if(rt.cdRemaining<=0){toast('Set a duration first');return;} rt.cdRunning=true; rt.cdEndTs=Date.now()+rt.cdRemaining*1000; if(!rt.iv) rt.iv=setInterval(()=>timerTick(tab),250); saveRt(tab); renderCustom(); }
       } else {
-        if(rt.swRunning){ rt.swAccum=rt.swAccum+(Date.now()-rt.swStartTs)/1000; rt.swRunning=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} renderCustom(); }
-        else { rt.swRunning=true; rt.swStartTs=Date.now(); if(!rt.iv) rt.iv=setInterval(()=>timerTick(tab),250); renderCustom(); }
+        if(rt.swRunning){ rt.swAccum=rt.swAccum+(Date.now()-rt.swStartTs)/1000; rt.swRunning=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} saveRt(tab); renderCustom(); }
+        else { rt.swRunning=true; rt.swStartTs=Date.now(); if(!rt.iv) rt.iv=setInterval(()=>timerTick(tab),250); saveRt(tab); renderCustom(); }
       }
     };
-    document.getElementById('tmr-reset').onclick=()=>{ if(rt.iv){clearInterval(rt.iv);rt.iv=null;} if(isCd){ rt.cdRunning=false; rt.cdTotal=rt.cdRemaining=tab.minutes*60+tab.seconds; } else { rt.swRunning=false; rt.swAccum=0; } renderCustom(); };
+    document.getElementById('tmr-reset').onclick=()=>{ if(rt.iv){clearInterval(rt.iv);rt.iv=null;} if(isCd){ rt.cdRunning=false; rt.cdTotal=rt.cdRemaining=tab.minutes*60+tab.seconds; } else { rt.swRunning=false; rt.swAccum=0; } saveRt(tab); renderCustom(); };
     timerTick(tab);
     if((isCd&&rt.cdRunning)||(!isCd&&rt.swRunning)){ if(!rt.iv) rt.iv=setInterval(()=>timerTick(tab),250); }
   }
@@ -1439,7 +1507,7 @@
     const ring=document.getElementById('tmr-ring-'+tab.id);
     if(rt.mode==='cd'){
       if(rt.cdRunning){ rt.cdRemaining=Math.max(0,(rt.cdEndTs-Date.now())/1000);
-        if(rt.cdRemaining<=0){ rt.cdRemaining=0; rt.cdRunning=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} beep(3); toast('⏰ Timer finished'); if(activeTab==='custom:'+tab.id) renderCustom(); return; } }
+        if(rt.cdRemaining<=0){ rt.cdRemaining=0; rt.cdRunning=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} saveRt(tab); beep(3); toast('⏰ Timer finished'); if(activeTab==='custom:'+tab.id) renderCustom(); return; } }
       if(clock) clock.textContent=fmtClock(rt.cdRemaining);
       setRing(ring, rt.cdTotal>0?rt.cdRemaining/rt.cdTotal:0);
     } else {
@@ -1457,12 +1525,13 @@
     else { rt.phase='focus'; }
     rt.total=rt.remaining=pomoPhaseSecs(tab,rt.phase);
     if(rt.running) rt.endTs=Date.now()+rt.remaining*1000;
+    saveRt(tab);
   }
   function renderPomodoro(tab,el){
     let rt=runtime[tab.id];
-    if(!rt){ const t=tab.focus*60; rt=runtime[tab.id]={phase:'focus',focusCount:0,total:t,remaining:t,running:false,endTs:0,iv:null}; }
+    if(!rt){ if(tab.rt){ rt=runtime[tab.id]=Object.assign({iv:null}, tab.rt); } else { const t=tab.focus*60; rt=runtime[tab.id]={phase:'focus',focusCount:0,total:t,remaining:t,running:false,endTs:0,iv:null}; } }
     const sessionNo=Math.min(tab.rounds, rt.focusCount+(rt.phase==='focus'?1:0));
-    el.innerHTML=ctabHead(tab,'Focus / break cycles that advance automatically.',`<span class="pill ${rt.phase==='focus'?'red':'green'}">${pomoLabel(rt.phase)}</span>`)
+    el.innerHTML=ctabHead(tab,'Focus / break cycles that advance automatically. Keeps running even if you refresh or close the tab.',`<span class="pill ${rt.phase==='focus'?'red':'green'}">${pomoLabel(rt.phase)}</span>`)
      +`<div class="card"><div class="timer-display"><div class="mode">Round ${sessionNo} of ${tab.rounds}</div><div class="ring-wrap">${ringSVG('pom-ring-'+tab.id,1)}<div class="ring-label"><div class="mode">${pomoLabel(rt.phase)}</div><div class="clock mono-time" id="pom-clock-${tab.id}">00:00</div></div></div></div>
         <div class="timer-ctrls"><button class="btn" id="pom-start">${rt.running?'Pause':'Start'}</button><button class="btn ghost" id="pom-skip">Skip ▸</button><button class="btn ghost" id="pom-reset">Reset</button></div>
         <div class="add-bar" style="justify-content:center;margin-top:14px;">
@@ -1471,11 +1540,11 @@
           <div class="field" style="max-width:100px;"><label>Long break</label><input type="number" id="pom-long" min="1" value="${tab.longBrk}"></div>
           <div class="field" style="max-width:90px;"><label>Rounds</label><input type="number" id="pom-rounds" min="1" value="${tab.rounds}"></div>
         </div></div>`;
-    const applyCfg=()=>{ tab.focus=Math.max(1,+document.getElementById('pom-focus').value||25); tab.brk=Math.max(1,+document.getElementById('pom-brk').value||5); tab.longBrk=Math.max(1,+document.getElementById('pom-long').value||15); tab.rounds=Math.max(1,+document.getElementById('pom-rounds').value||4); if(rt.iv){clearInterval(rt.iv);rt.iv=null;} runtime[tab.id]={phase:'focus',focusCount:0,total:tab.focus*60,remaining:tab.focus*60,running:false,endTs:0,iv:null}; persist(); renderCustom(); };
+    const applyCfg=()=>{ tab.focus=Math.max(1,+document.getElementById('pom-focus').value||25); tab.brk=Math.max(1,+document.getElementById('pom-brk').value||5); tab.longBrk=Math.max(1,+document.getElementById('pom-long').value||15); tab.rounds=Math.max(1,+document.getElementById('pom-rounds').value||4); if(rt.iv){clearInterval(rt.iv);rt.iv=null;} runtime[tab.id]={phase:'focus',focusCount:0,total:tab.focus*60,remaining:tab.focus*60,running:false,endTs:0,iv:null}; saveRt(tab); renderCustom(); };
     ['pom-focus','pom-brk','pom-long','pom-rounds'].forEach(id=>{ document.getElementById(id).onchange=applyCfg; });
-    document.getElementById('pom-start').onclick=()=>{ if(rt.running){ rt.remaining=Math.max(0,(rt.endTs-Date.now())/1000); rt.running=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} } else { rt.running=true; rt.endTs=Date.now()+rt.remaining*1000; if(!rt.iv) rt.iv=setInterval(()=>pomTick(tab),250); } renderCustom(); };
+    document.getElementById('pom-start').onclick=()=>{ if(rt.running){ rt.remaining=Math.max(0,(rt.endTs-Date.now())/1000); rt.running=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} } else { rt.running=true; rt.endTs=Date.now()+rt.remaining*1000; if(!rt.iv) rt.iv=setInterval(()=>pomTick(tab),250); } saveRt(tab); renderCustom(); };
     document.getElementById('pom-skip').onclick=()=>{ advancePomo(rt,tab); renderCustom(); };
-    document.getElementById('pom-reset').onclick=()=>{ if(rt.iv){clearInterval(rt.iv);rt.iv=null;} runtime[tab.id]={phase:'focus',focusCount:0,total:tab.focus*60,remaining:tab.focus*60,running:false,endTs:0,iv:null}; renderCustom(); };
+    document.getElementById('pom-reset').onclick=()=>{ if(rt.iv){clearInterval(rt.iv);rt.iv=null;} runtime[tab.id]={phase:'focus',focusCount:0,total:tab.focus*60,remaining:tab.focus*60,running:false,endTs:0,iv:null}; saveRt(tab); renderCustom(); };
     pomTick(tab);
     if(rt.running&&!rt.iv) rt.iv=setInterval(()=>pomTick(tab),250);
   }
