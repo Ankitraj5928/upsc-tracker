@@ -395,6 +395,23 @@
   .nt-link{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .nt-linkdel{border:1px solid var(--line);background:var(--card-2);color:var(--ink-soft);border-radius:8px;width:24px;height:24px;font-size:14px;line-height:1;flex:0 0 auto;}
   .nt-tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+
+  /* ---- hours detail modal ---- */
+  .hours-hint{font-size:11.5px;color:var(--ink-faint);text-align:right;margin-top:8px;}
+  .hd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin:8px 0 4px;}
+  .hd-stat{background:var(--card-2);border:1px solid var(--line-soft);border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;gap:3px;}
+  .hd-stat span{font-size:11px;color:var(--ink-soft);}
+  .hd-stat b{font-family:'Fraunces',serif;font-size:18px;}
+  .hd-h{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 8px;font-weight:800;}
+  .hd-list{display:flex;flex-direction:column;gap:7px;}
+  .hd-row{display:flex;align-items:center;gap:10px;}
+  .hd-lab{font-size:13px;width:90px;flex:0 0 auto;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .hd-track{flex:1;height:8px;background:var(--line-soft);border-radius:5px;overflow:hidden;}
+  .hd-track span{display:block;height:100%;background:var(--accent);border-radius:5px;}
+  .hd-val{font-size:12.5px;font-weight:600;width:38px;text-align:right;flex:0 0 auto;color:var(--ink-soft);}
+
+  /* keep the Add button on its own full-width row on phones so it never overlaps inputs */
+  @media(max-width:540px){ .add-bar .btn{flex:1 1 100%;width:100%;} }
 </style>
 </head>
 <body>
@@ -911,8 +928,31 @@
   function wStreak(){ const t=todayStr(); let streak=0,cur=t; if(!dayActive(cur)) cur=addDays(cur,-1); while(dayActive(cur)){streak++;cur=addDays(cur,-1);} return `<div class="stat"><div class="label">Current Streak</div><div class="value">${streak}<small> ${streak===1?'day':'days'}</small></div><div class="foot">${streak>0?'Keep it going 🔥':'Start today!'}</div></div>`; }
   function wCalendar(){ const t=todayStr(); const cells=[]; for(let i=27;i>=0;i--){const d=addDays(t,-i);cells.push({d,h:dayHours(d)});} const max=Math.max(2,...cells.map(c=>c.h));
     return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Consistency · 4 Weeks</h2></div></div><div class="heat">${cells.map(c=>{const lvl=c.h<=0?0:Math.ceil(Math.min(1,c.h/max)*4);return `<div class="heat-cell lvl${lvl}" title="${c.d}: ${c.h.toFixed(1)}h"></div>`;}).join('')}</div></div>`; }
-  function wHours7(){ const t=todayStr(); const days=[]; let wk=0; for(let i=6;i>=0;i--){const d=addDays(t,-i);const h=dayHours(d);wk+=h;days.push({d,h});} const maxH=Math.max(2,...days.map(x=>x.h));
-    return `<div class="card"><div class="section-head" style="margin-bottom:8px;"><div><h2 style="font-size:18px;">Study Hours · 7 Days</h2></div><span class="pill gold">${wk.toFixed(1)}h</span></div><div class="bars">${days.map(x=>`<div class="bar-col ${x.d===t?'today':''}"><div class="bar" style="height:${Math.round((x.h/maxH)*100)}%">${x.h>0?`<span class="v">${x.h%1===0?x.h:x.h.toFixed(1)}</span>`:''}</div><div class="d">${weekday(x.d)}</div></div>`).join('')}</div></div>`; }
+  function wHours7(){ const t=todayStr(); const days=[]; let wk=0; for(let i=6;i>=0;i--){const d=addDays(t,-i);const h=dayHours(d);wk+=h;days.push({d,h});} const maxH=Math.max(2,...days.map(x=>x.h)); const avg=wk/7;
+    return `<div class="card hours-card" id="hours7-card" style="cursor:pointer;"><div class="section-head" style="margin-bottom:8px;"><div><h2 style="font-size:18px;">Study Hours · 7 Days</h2></div><span class="pill gold">Avg ${avg.toFixed(1)} h/day</span></div><div class="bars">${days.map(x=>`<div class="bar-col ${x.d===t?'today':''}"><div class="bar" style="height:${Math.round((x.h/maxH)*100)}%">${x.h>0?`<span class="v">${x.h%1===0?x.h:x.h.toFixed(1)}</span>`:''}</div><div class="d">${weekday(x.d)}</div></div>`).join('')}</div><div class="hours-hint">Tap for full details →</div></div>`; }
+  function openHoursDetail(){
+    const t=todayStr();
+    const sum=(n)=>{ let tot=0,active=0,best=0; const rows=[]; for(let i=n-1;i>=0;i--){ const d=addDays(t,-i); const h=dayHours(d); tot+=h; if(h>0)active++; if(h>best)best=h; rows.push({d,h}); } return {tot,active,best,rows}; };
+    const s7=sum(7), s30=sum(30);
+    const subj={}; for(let i=29;i>=0;i--){ const o=S.days[addDays(t,-i)]; if(o&&o.hours) o.hours.forEach(x=>{ const name=((x.s||'').trim())||'Unspecified'; subj[name]=(subj[name]||0)+(parseFloat(x.h)||0); }); }
+    const subjArr=Object.keys(subj).map(k=>({k,h:subj[k]})).filter(x=>x.h>0).sort((a,b)=>b.h-a.h);
+    const maxDay=Math.max(1,...s7.rows.map(r=>r.h)); const maxSub=Math.max(1,...subjArr.map(x=>x.h));
+    openUiModal(`<button class="icon-btn modal-close" id="hd-x">✕</button><h3>Study Hours — details</h3>
+      <div class="hd-grid">
+        <div class="hd-stat"><span>Avg / day · 7d</span><b>${(s7.tot/7).toFixed(1)} h</b></div>
+        <div class="hd-stat"><span>Avg / day · 30d</span><b>${(s30.tot/30).toFixed(1)} h</b></div>
+        <div class="hd-stat"><span>Avg / active day</span><b>${s30.active?(s30.tot/s30.active).toFixed(1):'0.0'} h</b></div>
+        <div class="hd-stat"><span>Total · 7d</span><b>${s7.tot.toFixed(1)} h</b></div>
+        <div class="hd-stat"><span>Total · 30d</span><b>${s30.tot.toFixed(1)} h</b></div>
+        <div class="hd-stat"><span>Active days · 30d</span><b>${s30.active}/30</b></div>
+        <div class="hd-stat"><span>Best day · 30d</span><b>${s30.best.toFixed(1)} h</b></div>
+      </div>
+      <h4 class="hd-h">Last 7 days</h4>
+      <div class="hd-list">${s7.rows.map(r=>`<div class="hd-row"><span class="hd-lab">${weekday(r.d)} ${(+r.d.slice(8,10))}</span><div class="hd-track"><span style="width:${Math.round(r.h/maxDay*100)}%"></span></div><span class="hd-val">${r.h?r.h.toFixed(1):'–'}</span></div>`).join('')}</div>
+      <h4 class="hd-h">By subject · last 30 days</h4>
+      <div class="hd-list">${subjArr.length?subjArr.map(x=>`<div class="hd-row"><span class="hd-lab">${esc(x.k)}</span><div class="hd-track"><span style="width:${Math.round(x.h/maxSub*100)}%"></span></div><span class="hd-val">${x.h.toFixed(1)}</span></div>`).join(''):'<div class="mini-note">No study hours logged in the last 30 days.</div>'}</div>`);
+    document.getElementById('hd-x').onclick=closeUiModal;
+  }
   function wSyllabus(){ const list=S.syllabus||[]; const overall=list.length?Math.round(list.reduce((a,b)=>a+(+b.pct||0),0)/list.length):0; return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Syllabus</h2></div><span class="pill ${overall>=100?'green':overall>=50?'gold':''}">${overall}%</span></div><div class="progress big-progress"><span style="width:${overall}%"></span></div><div style="font-size:12px;color:var(--ink-soft);margin-top:8px;">${list.length?'across '+list.length+' subjects':'Add subjects in the Syllabus tab.'}</div></div>`; }
   function wQuick(){ return `<div class="qa-grid"><button class="qa" data-qa="daily"><span class="qa-ic">📓</span>Log today</button><button class="qa" data-qa="pomo"><span class="qa-ic">🍅</span>Focus timer</button><button class="qa" data-qa="tests"><span class="qa-ic">📝</span>Log a test</button><button class="qa" data-qa="weekly"><span class="qa-ic">🎯</span>Add target</button></div>`; }
   function wDeadlines(){ const t=todayStr(); const dls=collectDeadlines(); const showD=dls.slice(0,5); const moreD=dls.length-showD.length; return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Deadlines</h2></div>${dls.length?`<span class="pill ${dls.some(d=>d.overdue)?'red':'gold'}">${dls.length} open</span>`:''}</div>${showD.length?showD.map(d=>`<div class="dl-row" data-go="${d.srcTab}" data-period="${esc(d.period||'')}"><div class="dl-meta"><div class="dl-title">${esc(d.title)}</div><div class="dl-src">${esc(d.src)}</div></div><span class="pill ${d.overdue?'red':(d.deadline===t?'gold':'')}">${d.overdue?'Overdue':(daysUntil(d.deadline)===0?'Today':'in '+daysUntil(d.deadline)+'d')}</span></div>`).join('')+(moreD>0?`<div class="dl-more">+${moreD} more</div>`:''):`<div class="mini-note">Nothing due — add deadlines to your weekly, monthly or target tabs.</div>`}</div>`; }
@@ -1061,6 +1101,7 @@
     // quick actions + deadlines + latest links
     el.querySelectorAll('.qa').forEach(b=>b.onclick=()=>{ const a=b.dataset.qa; if(a==='pomo') goPomodoro(); else goAny(a); });
     el.querySelectorAll('.dl-row').forEach(r=>r.onclick=()=>{ const id=r.dataset.go; const per=r.dataset.period; if(id==='weekly'&&per) curWeek=per; if(id==='monthly'&&per) curMonth=per; if(id) goAny(id); });
+    const hc=document.getElementById('hours7-card'); if(hc) hc.onclick=openHoursDetail;
     const dt1=document.getElementById('dash-tests'); if(dt1) dt1.onclick=()=>goAny('tests');
     const dt2=document.getElementById('dash-tests2'); if(dt2) dt2.onclick=()=>goAny('tests');
   }
