@@ -412,6 +412,34 @@
 
   /* keep the Add button on its own full-width row on phones so it never overlaps inputs */
   @media(max-width:540px){ .add-bar .btn{flex:1 1 100%;width:100%;} }
+
+  /* ---- timer auto-log row ---- */
+  .autolog-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft);}
+  .al-toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft);font-weight:600;cursor:pointer;}
+  .al-toggle input{width:16px;height:16px;accent-color:var(--accent);}
+  .al-subj{max-width:200px;}
+
+  /* ---- weekly review ---- */
+  .wr-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;}
+  .wr-mini>div{background:var(--card-2);border:1px solid var(--line-soft);border-radius:10px;padding:10px 6px;}
+  .wr-mini b{font-family:'Fraunces',serif;font-size:20px;display:block;}
+  .wr-mini span{font-size:11px;color:var(--ink-soft);}
+  .wr-hi{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;}
+  .wr-hi li{font-size:13.5px;line-height:1.45;color:var(--ink);}
+  .wr-note{width:100%;min-height:110px;margin-top:4px;}
+
+  /* ---- momentum (merged) widget ---- */
+  .mo-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;}
+  .mo-stats>div{background:var(--card-2);border:1px solid var(--line-soft);border-radius:10px;padding:10px 6px;}
+  .mo-stats b{font-family:'Fraunces',serif;font-size:22px;display:block;line-height:1.1;}
+  .mo-stats span{font-size:11px;color:var(--ink-soft);}
+  .heat-lg{gap:5px;}
+  .heat-legend{display:flex;align-items:center;justify-content:flex-end;gap:5px;font-size:11px;color:var(--ink-soft);margin-top:8px;}
+  .heat-legend .hl{width:13px;height:13px;border-radius:4px;display:inline-block;background:var(--card-2);border:1px solid var(--line-soft);}
+  .heat-legend .hl.lvl1{background:#dcefd9;border-color:transparent;}
+  .heat-legend .hl.lvl2{background:#a8e0a0;border-color:transparent;}
+  .heat-legend .hl.lvl3{background:#5fb85a;border-color:transparent;}
+  .heat-legend .hl.lvl4{background:#2f8f3a;border-color:transparent;}
 </style>
 </head>
 <body>
@@ -453,6 +481,8 @@
     {id:'stickies',  label:'Sticky Notes',        size:'full', star:true},
     {id:'quote',     label:'Motivation Quote',    size:'full', star:true},
     {id:'coi',       label:'COI Articles',         size:'full', star:true},
+    {id:'weekreview',label:'Weekly Review',        size:'full', star:true},
+    {id:'momentum',  label:'Momentum (streak·hours·calendar)', size:'full', star:true},
     {id:'photonotes',label:'Photo Notes',         size:'full', star:true},
     {id:'countdown', label:'Exam countdown',      size:'full'},
     {id:'today',     label:"Today's study",       size:'half'},
@@ -552,7 +582,7 @@
   function hexToRgb(h){ h=(h||'').replace('#',''); if(h.length===3)h=h.split('').map(c=>c+c).join(''); const n=parseInt(h||'0',16); return [(n>>16)&255,(n>>8)&255,n&255]; }
   function rgbToHex(r){ return '#'+r.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join(''); }
   function mix(a,b,t){ const A=hexToRgb(a),B=hexToRgb(b); return rgbToHex([A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t]); }
-  function blankState(){ return { settings:{tasks:DEFAULT_TASKS.slice()}, appName:'Track your day', theme:{mode:'light',accent:'terracotta'}, days:{}, weekly:[], monthly:[], weeks:{}, months:{}, series:[], syllabus:[], syllabusInit:false, resTypes:DEFAULT_RES_TYPES.slice(), resourceTabs:defaultResourceTabs(), customTabs:[], hiddenBuiltins:[], exams:[], dashWidgets:DEFAULT_DASH_WIDGETS.slice(), hoursGoal:0, dashStickies:[], dashSizes:{}, photoNotes:[], customQuotes:[], customCOI:[] }; }
+  function blankState(){ return { settings:{tasks:DEFAULT_TASKS.slice()}, appName:'Track your day', theme:{mode:'light',accent:'terracotta'}, days:{}, weekly:[], monthly:[], weeks:{}, months:{}, series:[], syllabus:[], syllabusInit:false, resTypes:DEFAULT_RES_TYPES.slice(), resourceTabs:defaultResourceTabs(), customTabs:[], hiddenBuiltins:[], exams:[], dashWidgets:DEFAULT_DASH_WIDGETS.slice(), hoursGoal:0, dashStickies:[], dashSizes:{}, photoNotes:[], customQuotes:[], customCOI:[], weeklyReviews:{} }; }
   function normCustomTabs(ct){
     if(!Array.isArray(ct)) return [];
     return ct.map(t=>{
@@ -566,8 +596,8 @@
         case 'targets': return {...base, items:Array.isArray(t.items)?t.items.map(i=>({id:i.id||uid(),title:i.title||'',deadline:i.deadline||'',done:!!i.done,created:i.created||todayStr()})):[]};
         case 'progress': return {...base, items:Array.isArray(t.items)?t.items.map(i=>({id:i.id||uid(),name:i.name||'',pct:Math.max(0,Math.min(100,+i.pct||0))})):[]};
         case 'counter': return {...base, items:Array.isArray(t.items)?t.items.map(i=>({id:i.id||uid(),name:i.name||'',count:+i.count||0,step:+i.step||1,goal:(i.goal===''||i.goal==null)?'':+i.goal})):[]};
-        case 'timer': return {...base, minutes:+t.minutes||10, seconds:+t.seconds||0, rt:(t.rt&&typeof t.rt==='object')?t.rt:null};
-        case 'pomodoro': return {...base, focus:+t.focus||25, brk:+t.brk||5, longBrk:+t.longBrk||15, rounds:+t.rounds||4, rt:(t.rt&&typeof t.rt==='object')?t.rt:null};
+        case 'timer': return {...base, minutes:+t.minutes||10, seconds:+t.seconds||0, autolog:t.autolog!==false, logSubject:t.logSubject||'', rt:(t.rt&&typeof t.rt==='object')?t.rt:null};
+        case 'pomodoro': return {...base, focus:+t.focus||25, brk:+t.brk||5, longBrk:+t.longBrk||15, rounds:+t.rounds||4, autolog:t.autolog!==false, logSubject:t.logSubject||'', rt:(t.rt&&typeof t.rt==='object')?t.rt:null};
         case 'notes': return {...base, notes:Array.isArray(t.notes)?t.notes.map(n=>({id:n.id||uid(),title:n.title||'',body:n.body||'',img:n.img||'',link:(n.link&&n.link.url)?{url:String(n.link.url),label:n.link.label||''}:null,ts:n.ts||Date.now()})):[]};
         default: return null;
       }
@@ -586,7 +616,7 @@
     if(Array.isArray(o.monthly)) o.monthly.forEach(x=>{ const ref=x.deadline||x.created||today; const k=ref.slice(0,7); (months[k]=months[k]||{tasks:[]}).tasks.push({id:x.id||uid(),text:x.title||'',done:!!x.done}); });
     return {days,weeks,months};
   }
-  function normalize(o){ o=o||{}; const mig=migrateState(o); const th=(o.theme&&typeof o.theme==='object')?o.theme:{}; return { settings:(o.settings&&Array.isArray(o.settings.tasks)&&o.settings.tasks.length)?o.settings:{tasks:DEFAULT_TASKS.slice()}, appName:(typeof o.appName==='string'&&o.appName.trim())?o.appName.trim().slice(0,40):'Track your day', theme:{mode:th.mode==='dark'?'dark':'light', accent:THEMES[th.accent]?th.accent:'terracotta'}, days:mig.days, weekly:[], monthly:[], weeks:mig.weeks, months:mig.months, series:o.series||[], syllabus:o.syllabus||[], syllabusInit:!!o.syllabusInit, resTypes:(Array.isArray(o.resTypes)&&o.resTypes.length)?o.resTypes.slice():DEFAULT_RES_TYPES.slice(), resourceTabs:normResourceTabs(o.resourceTabs), customTabs:normCustomTabs(o.customTabs), hiddenBuiltins:Array.isArray(o.hiddenBuiltins)?o.hiddenBuiltins.filter(x=>BUILTIN_IDS.indexOf(x)>=0):[], exams:Array.isArray(o.exams)?o.exams.map(e=>({id:e.id||uid(),name:e.name||'Exam',date:e.date||''})).filter(e=>e.date):[], dashWidgets:Array.isArray(o.dashWidgets)?o.dashWidgets.filter(x=>DASH_WIDGET_IDS.indexOf(x)>=0):DEFAULT_DASH_WIDGETS.slice(), hoursGoal:+o.hoursGoal||0, dashStickies:Array.isArray(o.dashStickies)?o.dashStickies.map(s=>({id:s.id||uid(),text:s.text||'',color:['yellow','green','pink','blue'].indexOf(s.color)>=0?s.color:'yellow'})):[], dashSizes:(o.dashSizes&&typeof o.dashSizes==='object')?Object.keys(o.dashSizes).reduce((m,k)=>{ if(DASH_WIDGET_IDS.indexOf(k)>=0&&(o.dashSizes[k]==='half'||o.dashSizes[k]==='full')) m[k]=o.dashSizes[k]; return m; },{}):{}, photoNotes:Array.isArray(o.photoNotes)?o.photoNotes.map(p=>({id:p.id||uid(),img:p.img||'',text:p.text||'',ts:p.ts||Date.now()})).filter(p=>p.img):[], customQuotes:Array.isArray(o.customQuotes)?o.customQuotes.map(q=>String(q||'').trim()).filter(Boolean):[], customCOI:Array.isArray(o.customCOI)?o.customCOI.map(q=>String(q||'').trim()).filter(Boolean):[] }; }
+  function normalize(o){ o=o||{}; const mig=migrateState(o); const th=(o.theme&&typeof o.theme==='object')?o.theme:{}; return { settings:(o.settings&&Array.isArray(o.settings.tasks)&&o.settings.tasks.length)?o.settings:{tasks:DEFAULT_TASKS.slice()}, appName:(typeof o.appName==='string'&&o.appName.trim())?o.appName.trim().slice(0,40):'Track your day', theme:{mode:th.mode==='dark'?'dark':'light', accent:THEMES[th.accent]?th.accent:'terracotta'}, days:mig.days, weekly:[], monthly:[], weeks:mig.weeks, months:mig.months, series:o.series||[], syllabus:o.syllabus||[], syllabusInit:!!o.syllabusInit, resTypes:(Array.isArray(o.resTypes)&&o.resTypes.length)?o.resTypes.slice():DEFAULT_RES_TYPES.slice(), resourceTabs:normResourceTabs(o.resourceTabs), customTabs:normCustomTabs(o.customTabs), hiddenBuiltins:Array.isArray(o.hiddenBuiltins)?o.hiddenBuiltins.filter(x=>BUILTIN_IDS.indexOf(x)>=0):[], exams:Array.isArray(o.exams)?o.exams.map(e=>({id:e.id||uid(),name:e.name||'Exam',date:e.date||''})).filter(e=>e.date):[], dashWidgets:Array.isArray(o.dashWidgets)?o.dashWidgets.filter(x=>DASH_WIDGET_IDS.indexOf(x)>=0):DEFAULT_DASH_WIDGETS.slice(), hoursGoal:+o.hoursGoal||0, dashStickies:Array.isArray(o.dashStickies)?o.dashStickies.map(s=>({id:s.id||uid(),text:s.text||'',color:['yellow','green','pink','blue'].indexOf(s.color)>=0?s.color:'yellow'})):[], dashSizes:(o.dashSizes&&typeof o.dashSizes==='object')?Object.keys(o.dashSizes).reduce((m,k)=>{ if(DASH_WIDGET_IDS.indexOf(k)>=0&&(o.dashSizes[k]==='half'||o.dashSizes[k]==='full')) m[k]=o.dashSizes[k]; return m; },{}):{}, photoNotes:Array.isArray(o.photoNotes)?o.photoNotes.map(p=>({id:p.id||uid(),img:p.img||'',text:p.text||'',ts:p.ts||Date.now()})).filter(p=>p.img):[], customQuotes:Array.isArray(o.customQuotes)?o.customQuotes.map(q=>String(q||'').trim()).filter(Boolean):[], customCOI:Array.isArray(o.customCOI)?o.customCOI.map(q=>String(q||'').trim()).filter(Boolean):[], weeklyReviews:(o.weeklyReviews&&typeof o.weeklyReviews==='object')?Object.keys(o.weeklyReviews).reduce((m,k)=>{ const v=o.weeklyReviews[k]; if(typeof v==='string'&&v.trim()) m[k]=v; return m; },{}):{} }; }
   let S=blankState();
   let curDate=todayStr();
   let curWeek=weekStart(todayStr());
@@ -928,6 +958,48 @@
   function wStreak(){ const t=todayStr(); let streak=0,cur=t; if(!dayActive(cur)) cur=addDays(cur,-1); while(dayActive(cur)){streak++;cur=addDays(cur,-1);} return `<div class="stat"><div class="label">Current Streak</div><div class="value">${streak}<small> ${streak===1?'day':'days'}</small></div><div class="foot">${streak>0?'Keep it going 🔥':'Start today!'}</div></div>`; }
   function wCalendar(){ const t=todayStr(); const cells=[]; for(let i=27;i>=0;i--){const d=addDays(t,-i);cells.push({d,h:dayHours(d)});} const max=Math.max(2,...cells.map(c=>c.h));
     return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Consistency · 4 Weeks</h2></div></div><div class="heat">${cells.map(c=>{const lvl=c.h<=0?0:Math.ceil(Math.min(1,c.h/max)*4);return `<div class="heat-cell lvl${lvl}" title="${c.d}: ${c.h.toFixed(1)}h"></div>`;}).join('')}</div></div>`; }
+  function curStreak(){ const t=todayStr(); let streak=0,c=t; if(!dayActive(c))c=addDays(c,-1); while(dayActive(c)){streak++;c=addDays(c,-1);} return streak; }
+  function wMomentum(){
+    const t=todayStr(); const streak=curStreak(); const todayH=dayHours(t);
+    let wk=0; for(let i=6;i>=0;i--) wk+=dayHours(addDays(t,-i)); const avg=wk/7;
+    const cells=[]; for(let i=27;i>=0;i--){const d=addDays(t,-i);cells.push({d,h:dayHours(d)});} const max=Math.max(2,...cells.map(x=>x.h));
+    return `<div class="card momentum-card" id="momentum-card" style="cursor:pointer;">
+      <div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Momentum</h2></div><span class="pill ${streak>0?'gold':''}">${streak} day${streak===1?'':'s'} 🔥</span></div>
+      <div class="mo-stats"><div><b>${streak}</b><span>streak</span></div><div><b>${todayH.toFixed(1)}</b><span>today · h</span></div><div><b>${avg.toFixed(1)}</b><span>avg/day · 7d</span></div></div>
+      <div class="heat" style="margin-top:14px;">${cells.map(x=>{const lvl=x.h<=0?0:Math.ceil(Math.min(1,x.h/max)*4);return `<div class="heat-cell lvl${lvl}" title="${x.d}: ${x.h.toFixed(1)}h"></div>`;}).join('')}</div>
+      <div class="hours-hint">Tap for full details →</div></div>`;
+  }
+  function openMomentumDetail(){
+    const t=todayStr(); const streak=curStreak();
+    const actives=Object.keys(S.days).filter(d=>dayActive(d)).sort(); let best=0,run=0,prev=null;
+    actives.forEach(d=>{ if(prev&&addDays(prev,1)===d) run++; else run=1; if(run>best)best=run; prev=d; });
+    const sum=(n)=>{ let tot=0,active=0,bestH=0; for(let i=n-1;i>=0;i--){const h=dayHours(addDays(t,-i)); tot+=h; if(h>0)active++; if(h>bestH)bestH=h;} return {tot,active,bestH}; };
+    const s7=sum(7), s30=sum(30);
+    const subj={}; for(let i=29;i>=0;i--){ const o=S.days[addDays(t,-i)]; if(o&&o.hours) o.hours.forEach(x=>{const nm=((x.s||'').trim())||'Unspecified'; subj[nm]=(subj[nm]||0)+(parseFloat(x.h)||0);}); }
+    const subjArr=Object.keys(subj).map(k=>({k,h:subj[k]})).filter(x=>x.h>0).sort((a,b)=>b.h-a.h); const maxSub=Math.max(1,...subjArr.map(x=>x.h));
+    const N=56; const cells=[]; for(let i=N-1;i>=0;i--){const d=addDays(t,-i);cells.push({d,h:dayHours(d)});} const maxC=Math.max(2,...cells.map(x=>x.h));
+    const days7=[]; for(let i=6;i>=0;i--){const d=addDays(t,-i);days7.push({d,h:dayHours(d)});} const maxDay=Math.max(1,...days7.map(r=>r.h));
+    openUiModal(`<button class="icon-btn modal-close" id="mo-x">✕</button><h3>Momentum — details</h3>
+      <div class="hd-grid">
+        <div class="hd-stat"><span>Current streak</span><b>${streak}d</b></div>
+        <div class="hd-stat"><span>Best streak</span><b>${best}d</b></div>
+        <div class="hd-stat"><span>Active days · 30d</span><b>${s30.active}/30</b></div>
+        <div class="hd-stat"><span>Today</span><b>${dayHours(t).toFixed(1)}h</b></div>
+        <div class="hd-stat"><span>Avg/day · 7d</span><b>${(s7.tot/7).toFixed(1)}h</b></div>
+        <div class="hd-stat"><span>Avg/day · 30d</span><b>${(s30.tot/30).toFixed(1)}h</b></div>
+        <div class="hd-stat"><span>Total · 7d</span><b>${s7.tot.toFixed(1)}h</b></div>
+        <div class="hd-stat"><span>Total · 30d</span><b>${s30.tot.toFixed(1)}h</b></div>
+        <div class="hd-stat"><span>Best day · 30d</span><b>${s30.bestH.toFixed(1)}h</b></div>
+      </div>
+      <h4 class="hd-h">Consistency · last 8 weeks</h4>
+      <div class="heat heat-lg">${cells.map(x=>{const lvl=x.h<=0?0:Math.ceil(Math.min(1,x.h/maxC)*4);return `<div class="heat-cell lvl${lvl}" title="${x.d}: ${x.h.toFixed(1)}h"></div>`;}).join('')}</div>
+      <div class="heat-legend">Less <span class="hl lvl1"></span><span class="hl lvl2"></span><span class="hl lvl3"></span><span class="hl lvl4"></span> More</div>
+      <h4 class="hd-h">Last 7 days</h4>
+      <div class="hd-list">${days7.map(r=>`<div class="hd-row"><span class="hd-lab">${weekday(r.d)} ${(+r.d.slice(8,10))}</span><div class="hd-track"><span style="width:${Math.round(r.h/maxDay*100)}%"></span></div><span class="hd-val">${r.h?r.h.toFixed(1):'–'}</span></div>`).join('')}</div>
+      <h4 class="hd-h">By subject · last 30 days</h4>
+      <div class="hd-list">${subjArr.length?subjArr.map(x=>`<div class="hd-row"><span class="hd-lab">${esc(x.k)}</span><div class="hd-track"><span style="width:${Math.round(x.h/maxSub*100)}%"></span></div><span class="hd-val">${x.h.toFixed(1)}</span></div>`).join(''):'<div class="mini-note">No study hours logged in the last 30 days.</div>'}</div>`);
+    document.getElementById('mo-x').onclick=closeUiModal;
+  }
   function wHours7(){ const t=todayStr(); const days=[]; let wk=0; for(let i=6;i>=0;i--){const d=addDays(t,-i);const h=dayHours(d);wk+=h;days.push({d,h});} const maxH=Math.max(2,...days.map(x=>x.h)); const avg=wk/7;
     return `<div class="card hours-card" id="hours7-card" style="cursor:pointer;"><div class="section-head" style="margin-bottom:8px;"><div><h2 style="font-size:18px;">Study Hours · 7 Days</h2></div><span class="pill gold">Avg ${avg.toFixed(1)} h/day</span></div><div class="bars">${days.map(x=>`<div class="bar-col ${x.d===t?'today':''}"><div class="bar" style="height:${Math.round((x.h/maxH)*100)}%">${x.h>0?`<span class="v">${x.h%1===0?x.h:x.h.toFixed(1)}</span>`:''}</div><div class="d">${weekday(x.d)}</div></div>`).join('')}</div><div class="hours-hint">Tap for full details →</div></div>`; }
   function openHoursDetail(){
@@ -953,12 +1025,54 @@
       <div class="hd-list">${subjArr.length?subjArr.map(x=>`<div class="hd-row"><span class="hd-lab">${esc(x.k)}</span><div class="hd-track"><span style="width:${Math.round(x.h/maxSub*100)}%"></span></div><span class="hd-val">${x.h.toFixed(1)}</span></div>`).join(''):'<div class="mini-note">No study hours logged in the last 30 days.</div>'}</div>`);
     document.getElementById('hd-x').onclick=closeUiModal;
   }
+  function weekStats(ws,we){ let hours=0,active=0,tdone=0,ttot=0,best=0,bestD=''; let d=ws; let guard=0; while(d<=we&&guard++<400){ const h=dayHours(d); hours+=h; if(h>0)active++; if(h>best){best=h;bestD=d;} const st=dayTaskStats(d); tdone+=st.done; ttot+=st.tot; d=addDays(d,1); } return {hours,active,tdone,ttot,best,bestD}; }
+  function wWeekReview(){ const t=todayStr(); const ws=weekStart(t); const days=Math.round((new Date(t+'T00:00:00')-new Date(ws+'T00:00:00'))/86400000)+1; const s=weekStats(ws,t); const tk=S.weeks[ws]?S.weeks[ws].tasks:[]; const tdone=tk.filter(x=>x.done).length;
+    return `<div class="card"><div class="section-head" style="margin-bottom:10px;"><div><h2 style="font-size:18px;">Weekly Review</h2><p style="margin:0;font-size:12px;color:var(--ink-soft);">${fmtDateShort(ws)} – ${fmtDateShort(t)}</p></div><span class="pill gold">${s.hours.toFixed(1)}h</span></div>
+      <div class="wr-mini"><div><b>${(s.hours/Math.max(1,days)).toFixed(1)}</b><span>avg/day</span></div><div><b>${s.ttot?Math.round(s.tdone/s.ttot*100):0}%</b><span>tasks</span></div><div><b>${tk.length?tdone+'/'+tk.length:'—'}</b><span>targets</span></div></div>
+      <button class="btn ghost sm" id="wr-open" style="margin-top:12px;width:100%;">Open full review →</button></div>`; }
+  function openWeekReview(){
+    const t=todayStr(); const ws=weekStart(t); const days=Math.round((new Date(t+'T00:00:00')-new Date(ws+'T00:00:00'))/86400000)+1;
+    const cur=weekStats(ws,t); const pws=weekStart(addDays(ws,-7)), pwe=addDays(ws,-1); const prev=weekStats(pws,pwe);
+    let tests=[]; (S.series||[]).forEach(s=>s.tests.forEach(x=>{ if(x.date&&x.date>=ws&&x.date<=t) tests.push({...x,series:s.name}); }));
+    const avgScore=tests.length?Math.round(tests.reduce((a,b)=>a+(b.total?b.scored/b.total*100:0),0)/tests.length):null;
+    const tk=S.weeks[ws]?S.weeks[ws].tasks:[]; const tdone=tk.filter(x=>x.done).length;
+    let streak=0,c=t; if(!dayActive(c))c=addDays(c,-1); while(dayActive(c)){streak++;c=addDays(c,-1);}
+    const hd=cur.hours-prev.hours;
+    const hi=[];
+    hi.push(`You studied <b>${cur.hours.toFixed(1)}h</b> across <b>${cur.active}</b> day${cur.active!==1?'s':''} (avg ${(cur.hours/Math.max(1,days)).toFixed(1)}h/day).`);
+    if(prev.hours>0) hi.push(`That's <b>${hd>=0?'+':''}${hd.toFixed(1)}h</b> vs last week (${prev.hours.toFixed(1)}h).`);
+    else if(cur.hours>0) hi.push(`First tracked week — nice start. Next week you'll have a comparison.`);
+    if(cur.ttot) hi.push(`Completed <b>${cur.tdone}/${cur.ttot}</b> daily tasks (${Math.round(cur.tdone/cur.ttot*100)}%).`);
+    if(tk.length) hi.push(`Weekly targets: <b>${tdone}/${tk.length}</b> done${tdone<tk.length?` — ${tk.length-tdone} to carry over`:` — all cleared! 🎯`}.`);
+    if(tests.length) hi.push(`Took <b>${tests.length}</b> test${tests.length!==1?'s':''}${avgScore!=null?`, average <b>${avgScore}%</b>`:''}.`);
+    if(cur.bestD) hi.push(`Most productive day: <b>${weekday(cur.bestD)}</b> (${cur.best.toFixed(1)}h).`);
+    if(cur.hours===0&&cur.ttot===0) hi.length=0, hi.push('No activity logged this week yet — log some study hours or tasks to see your review build up.');
+    const reflection=(S.weeklyReviews&&S.weeklyReviews[ws])?S.weeklyReviews[ws]:'';
+    openUiModal(`<button class="icon-btn modal-close" id="wr-x">✕</button><h3>Weekly Review</h3>
+      <p class="lead">${fmtDate(ws)} – ${fmtDate(t)}</p>
+      <div class="hd-grid">
+        <div class="hd-stat"><span>Total hours</span><b>${cur.hours.toFixed(1)}h</b></div>
+        <div class="hd-stat"><span>Avg / day</span><b>${(cur.hours/Math.max(1,days)).toFixed(1)}h</b></div>
+        <div class="hd-stat"><span>vs last week</span><b style="color:${hd>=0?'var(--green)':'var(--red)'}">${hd>=0?'+':''}${hd.toFixed(1)}h</b></div>
+        <div class="hd-stat"><span>Active days</span><b>${cur.active}/${days}</b></div>
+        <div class="hd-stat"><span>Daily tasks</span><b>${cur.ttot?Math.round(cur.tdone/cur.ttot*100)+'%':'—'}</b></div>
+        <div class="hd-stat"><span>Weekly targets</span><b>${tk.length?tdone+'/'+tk.length:'—'}</b></div>
+        <div class="hd-stat"><span>Tests</span><b>${tests.length?tests.length+(avgScore!=null?' · '+avgScore+'%':''):'—'}</b></div>
+        <div class="hd-stat"><span>Streak</span><b>${streak}d</b></div>
+      </div>
+      <h4 class="hd-h">Highlights</h4>
+      <ul class="wr-hi">${hi.map(x=>`<li>${x}</li>`).join('')}</ul>
+      <h4 class="hd-h">Reflection — saved for this week</h4>
+      <textarea id="wr-note" class="wr-note" placeholder="What went well? What to improve? Your focus for next week…">${esc(reflection)}</textarea>`);
+    document.getElementById('wr-x').onclick=closeUiModal;
+    const ta=document.getElementById('wr-note'); ta.onblur=()=>{ if(!S.weeklyReviews)S.weeklyReviews={}; const v=ta.value.trim(); if(v) S.weeklyReviews[ws]=v; else delete S.weeklyReviews[ws]; persist(); };
+  }
   function wSyllabus(){ const list=S.syllabus||[]; const overall=list.length?Math.round(list.reduce((a,b)=>a+(+b.pct||0),0)/list.length):0; return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Syllabus</h2></div><span class="pill ${overall>=100?'green':overall>=50?'gold':''}">${overall}%</span></div><div class="progress big-progress"><span style="width:${overall}%"></span></div><div style="font-size:12px;color:var(--ink-soft);margin-top:8px;">${list.length?'across '+list.length+' subjects':'Add subjects in the Syllabus tab.'}</div></div>`; }
   function wQuick(){ return `<div class="qa-grid"><button class="qa" data-qa="daily"><span class="qa-ic">📓</span>Log today</button><button class="qa" data-qa="pomo"><span class="qa-ic">🍅</span>Focus timer</button><button class="qa" data-qa="tests"><span class="qa-ic">📝</span>Log a test</button><button class="qa" data-qa="weekly"><span class="qa-ic">🎯</span>Add target</button></div>`; }
   function wDeadlines(){ const t=todayStr(); const dls=collectDeadlines(); const showD=dls.slice(0,5); const moreD=dls.length-showD.length; return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Deadlines</h2></div>${dls.length?`<span class="pill ${dls.some(d=>d.overdue)?'red':'gold'}">${dls.length} open</span>`:''}</div>${showD.length?showD.map(d=>`<div class="dl-row" data-go="${d.srcTab}" data-period="${esc(d.period||'')}"><div class="dl-meta"><div class="dl-title">${esc(d.title)}</div><div class="dl-src">${esc(d.src)}</div></div><span class="pill ${d.overdue?'red':(d.deadline===t?'gold':'')}">${d.overdue?'Overdue':(daysUntil(d.deadline)===0?'Today':'in '+daysUntil(d.deadline)+'d')}</span></div>`).join('')+(moreD>0?`<div class="dl-more">+${moreD} more</div>`:''):`<div class="mini-note">Nothing due — add deadlines to your weekly, monthly or target tabs.</div>`}</div>`; }
   function wLatest(){ let latest=null; S.series.forEach(s=>s.tests.forEach(t2=>{ if(!latest||(t2.date||'')>(latest.date||'')) latest={...t2,series:s.name}; })); return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Latest Test</h2></div>${latest?`<span class="pill ${(latest.scored/latest.total*100)>=50?'green':(latest.scored/latest.total*100)>=35?'gold':'red'}">${Math.round(latest.scored/latest.total*100)}%</span>`:''}</div>${latest?`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;"><div style="min-width:0;"><div style="font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(latest.topic||latest.series)}</div><div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">${esc(latest.series)} · ${fmtDate(latest.date)}</div></div><div class="score-tag" style="font-size:26px;color:var(--accent);white-space:nowrap;">${latest.scored}<span style="color:var(--ink-faint);font-size:15px;">/${latest.total}</span></div></div><button class="btn ghost sm" id="dash-tests" style="margin-top:14px;">View test series</button>`:`<div class="mini-note">No tests logged yet. <button class="linkbtn" id="dash-tests2">Log your first →</button></div>`}</div>`; }
 
-  const WBUILD={focus:wFocus,top3:wTop3,hoursgoal:wHoursGoal,stickies:wStickies,quote:wQuote,coi:wCOI,photonotes:wPhotoNotes,countdown:wCountdown,today:wToday,streak:wStreak,calendar:wCalendar,hours7:wHours7,syllabus:wSyllabus,quick:wQuick,deadlines:wDeadlines,latest:wLatest};
+  const WBUILD={focus:wFocus,top3:wTop3,hoursgoal:wHoursGoal,stickies:wStickies,quote:wQuote,coi:wCOI,weekreview:wWeekReview,momentum:wMomentum,photonotes:wPhotoNotes,countdown:wCountdown,today:wToday,streak:wStreak,calendar:wCalendar,hours7:wHours7,syllabus:wSyllabus,quick:wQuick,deadlines:wDeadlines,latest:wLatest};
 
   function quotePool(){ return QUOTES.concat(S.customQuotes||[]); }
   function coiPool(){ return COI_ARTICLES.concat(S.customCOI||[]); }
@@ -1102,6 +1216,8 @@
     el.querySelectorAll('.qa').forEach(b=>b.onclick=()=>{ const a=b.dataset.qa; if(a==='pomo') goPomodoro(); else goAny(a); });
     el.querySelectorAll('.dl-row').forEach(r=>r.onclick=()=>{ const id=r.dataset.go; const per=r.dataset.period; if(id==='weekly'&&per) curWeek=per; if(id==='monthly'&&per) curMonth=per; if(id) goAny(id); });
     const hc=document.getElementById('hours7-card'); if(hc) hc.onclick=openHoursDetail;
+    const wro=document.getElementById('wr-open'); if(wro) wro.onclick=openWeekReview;
+    const moc=document.getElementById('momentum-card'); if(moc) moc.onclick=openMomentumDetail;
     const dt1=document.getElementById('dash-tests'); if(dt1) dt1.onclick=()=>goAny('tests');
     const dt2=document.getElementById('dash-tests2'); if(dt2) dt2.onclick=()=>goAny('tests');
   }
@@ -1507,6 +1623,8 @@
   function setRing(c,frac){ if(!c)return; const r=54,cir=2*Math.PI*r; c.style.strokeDashoffset=(cir*(1-Math.max(0,Math.min(1,frac)))).toFixed(1); }
   function stopRuntime(id){ const rt=runtime[id]; if(rt&&rt.iv){ clearInterval(rt.iv); } delete runtime[id]; }
   function saveRt(tab){ const rt=runtime[tab.id]; if(!rt){ tab.rt=null; persist(); return; } const c={}; for(const k in rt){ if(k!=='iv') c[k]=rt[k]; } tab.rt=c; persist(); }
+  function logStudySeconds(subject, secs){ secs=Math.round(secs); if(secs<5) return 0; const o=dayObj(todayStr()); if(!Array.isArray(o.hours)) o.hours=[]; const name=((subject||'').trim())||'Focus'; let row=o.hours.find(h=>h._auto&&h.s===name); if(!row){ row={s:name,h:0,_auto:true}; o.hours.push(row); } row.h=Math.round(((parseFloat(row.h)||0)+secs/3600)*100)/100; persist(); return secs; }
+  function bankFocus(tab,rt,totalNowSec,loggedField){ if(!tab.autolog) return; const logged=rt[loggedField]||0; const delta=totalNowSec-logged; if(delta<5) return; const got=logStudySeconds(tab.logSubject||tab.name, delta); rt[loggedField]=totalNowSec; if(got){ const m=Math.round(got/60); toast('Logged '+(m>=60?(Math.floor(m/60)+'h '+(m%60)+'m'):m+'m')+' to today’s hours'); } saveRt(tab); }
 
   /* ---- Timer & Stopwatch ---- */
   function renderTimer(tab,el){
@@ -1522,23 +1640,26 @@
         <div class="timer-display"><div class="ring-wrap">${ringSVG('tmr-ring-'+tab.id,1)}<div class="ring-label"><div class="mode">${isCd?'Time left':'Elapsed'}</div><div class="clock mono-time" id="tmr-clock-${tab.id}">00:00</div></div></div></div>
         ${isCd?`<div class="add-bar" style="justify-content:center;"><div class="field" style="max-width:90px;"><label>Min</label><input type="number" id="tmr-min" min="0" value="${tab.minutes}" ${running?'disabled':''}></div><div class="field" style="max-width:90px;"><label>Sec</label><input type="number" id="tmr-sec" min="0" max="59" value="${tab.seconds}" ${running?'disabled':''}></div></div>`:''}
         <div class="timer-ctrls"><button class="btn" id="tmr-start">${running?'Pause':'Start'}</button><button class="btn ghost" id="tmr-reset">Reset</button></div>
-        ${running?'<div class="mini-note" style="text-align:center;margin-top:10px;">Running — safe to refresh or close; it keeps counting.</div>':''}</div>`;
+        ${running?'<div class="mini-note" style="text-align:center;margin-top:10px;">Running — safe to refresh or close; it keeps counting.</div>':''}
+        <div class="autolog-row"><label class="al-toggle"><input type="checkbox" id="tmr-auto" ${tab.autolog?'checked':''}> Auto-log focus time to Daily hours</label><input type="text" id="tmr-subj" class="al-subj" placeholder="Subject (e.g. Polity)" value="${esc(tab.logSubject||'')}"></div></div>`;
     el.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{ rt.mode=b.dataset.mode; saveRt(tab); renderCustom(); });
+    document.getElementById('tmr-auto').onchange=e=>{ tab.autolog=e.target.checked; persist(); };
+    document.getElementById('tmr-subj').onblur=e=>{ tab.logSubject=e.target.value; persist(); };
     if(isCd){
       const mi=document.getElementById('tmr-min'), se=document.getElementById('tmr-sec');
-      const applySet=()=>{ tab.minutes=Math.max(0,+mi.value||0); tab.seconds=Math.max(0,Math.min(59,+se.value||0)); rt.cdRunning=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} rt.cdTotal=rt.cdRemaining=tab.minutes*60+tab.seconds; saveRt(tab); renderCustom(); };
+      const applySet=()=>{ tab.minutes=Math.max(0,+mi.value||0); tab.seconds=Math.max(0,Math.min(59,+se.value||0)); rt.cdRunning=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} rt.cdTotal=rt.cdRemaining=tab.minutes*60+tab.seconds; rt.cdLogged=0; saveRt(tab); renderCustom(); };
       mi.onchange=applySet; se.onchange=applySet;
     }
     document.getElementById('tmr-start').onclick=()=>{
       if(isCd){
-        if(rt.cdRunning){ rt.cdRemaining=Math.max(0,(rt.cdEndTs-Date.now())/1000); rt.cdRunning=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} saveRt(tab); renderCustom(); }
-        else { if(rt.cdRemaining<=0) rt.cdRemaining=rt.cdTotal=tab.minutes*60+tab.seconds; if(rt.cdRemaining<=0){toast('Set a duration first');return;} rt.cdRunning=true; rt.cdEndTs=Date.now()+rt.cdRemaining*1000; if(!rt.iv) rt.iv=setInterval(()=>timerTick(tab),250); saveRt(tab); renderCustom(); }
+        if(rt.cdRunning){ rt.cdRemaining=Math.max(0,(rt.cdEndTs-Date.now())/1000); rt.cdRunning=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} bankFocus(tab,rt,rt.cdTotal-rt.cdRemaining,'cdLogged'); saveRt(tab); renderCustom(); }
+        else { if(rt.cdRemaining<=0){ rt.cdRemaining=rt.cdTotal=tab.minutes*60+tab.seconds; rt.cdLogged=0; } if(rt.cdRemaining<=0){toast('Set a duration first');return;} rt.cdRunning=true; rt.cdEndTs=Date.now()+rt.cdRemaining*1000; if(!rt.iv) rt.iv=setInterval(()=>timerTick(tab),250); saveRt(tab); renderCustom(); }
       } else {
-        if(rt.swRunning){ rt.swAccum=rt.swAccum+(Date.now()-rt.swStartTs)/1000; rt.swRunning=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} saveRt(tab); renderCustom(); }
+        if(rt.swRunning){ rt.swAccum=rt.swAccum+(Date.now()-rt.swStartTs)/1000; rt.swRunning=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} bankFocus(tab,rt,rt.swAccum,'swLogged'); saveRt(tab); renderCustom(); }
         else { rt.swRunning=true; rt.swStartTs=Date.now(); if(!rt.iv) rt.iv=setInterval(()=>timerTick(tab),250); saveRt(tab); renderCustom(); }
       }
     };
-    document.getElementById('tmr-reset').onclick=()=>{ if(rt.iv){clearInterval(rt.iv);rt.iv=null;} if(isCd){ rt.cdRunning=false; rt.cdTotal=rt.cdRemaining=tab.minutes*60+tab.seconds; } else { rt.swRunning=false; rt.swAccum=0; } saveRt(tab); renderCustom(); };
+    document.getElementById('tmr-reset').onclick=()=>{ if(rt.iv){clearInterval(rt.iv);rt.iv=null;} if(isCd){ rt.cdRunning=false; rt.cdTotal=rt.cdRemaining=tab.minutes*60+tab.seconds; rt.cdLogged=0; } else { rt.swRunning=false; rt.swAccum=0; rt.swLogged=0; } saveRt(tab); renderCustom(); };
     timerTick(tab);
     if((isCd&&rt.cdRunning)||(!isCd&&rt.swRunning)){ if(!rt.iv) rt.iv=setInterval(()=>timerTick(tab),250); }
   }
@@ -1548,7 +1669,7 @@
     const ring=document.getElementById('tmr-ring-'+tab.id);
     if(rt.mode==='cd'){
       if(rt.cdRunning){ rt.cdRemaining=Math.max(0,(rt.cdEndTs-Date.now())/1000);
-        if(rt.cdRemaining<=0){ rt.cdRemaining=0; rt.cdRunning=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} saveRt(tab); beep(3); toast('⏰ Timer finished'); if(activeTab==='custom:'+tab.id) renderCustom(); return; } }
+        if(rt.cdRemaining<=0){ rt.cdRemaining=0; rt.cdRunning=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} bankFocus(tab,rt,rt.cdTotal,'cdLogged'); saveRt(tab); beep(3); toast('⏰ Timer finished'); if(activeTab==='custom:'+tab.id) renderCustom(); return; } }
       if(clock) clock.textContent=fmtClock(rt.cdRemaining);
       setRing(ring, rt.cdTotal>0?rt.cdRemaining/rt.cdTotal:0);
     } else {
@@ -1565,6 +1686,7 @@
     if(rt.phase==='focus'){ rt.focusCount++; rt.phase=(rt.focusCount%tab.rounds===0)?'long':'short'; }
     else { rt.phase='focus'; }
     rt.total=rt.remaining=pomoPhaseSecs(tab,rt.phase);
+    rt.pLogged=0;
     if(rt.running) rt.endTs=Date.now()+rt.remaining*1000;
     saveRt(tab);
   }
@@ -1580,19 +1702,22 @@
           <div class="field" style="max-width:90px;"><label>Break</label><input type="number" id="pom-brk" min="1" value="${tab.brk}"></div>
           <div class="field" style="max-width:100px;"><label>Long break</label><input type="number" id="pom-long" min="1" value="${tab.longBrk}"></div>
           <div class="field" style="max-width:90px;"><label>Rounds</label><input type="number" id="pom-rounds" min="1" value="${tab.rounds}"></div>
-        </div></div>`;
-    const applyCfg=()=>{ tab.focus=Math.max(1,+document.getElementById('pom-focus').value||25); tab.brk=Math.max(1,+document.getElementById('pom-brk').value||5); tab.longBrk=Math.max(1,+document.getElementById('pom-long').value||15); tab.rounds=Math.max(1,+document.getElementById('pom-rounds').value||4); if(rt.iv){clearInterval(rt.iv);rt.iv=null;} runtime[tab.id]={phase:'focus',focusCount:0,total:tab.focus*60,remaining:tab.focus*60,running:false,endTs:0,iv:null}; saveRt(tab); renderCustom(); };
+        </div>
+        <div class="autolog-row"><label class="al-toggle"><input type="checkbox" id="pom-auto" ${tab.autolog?'checked':''}> Auto-log focus time to Daily hours</label><input type="text" id="pom-subj" class="al-subj" placeholder="Subject (e.g. Polity)" value="${esc(tab.logSubject||'')}"></div></div>`;
+    document.getElementById('pom-auto').onchange=e=>{ tab.autolog=e.target.checked; persist(); };
+    document.getElementById('pom-subj').onblur=e=>{ tab.logSubject=e.target.value; persist(); };
+    const applyCfg=()=>{ tab.focus=Math.max(1,+document.getElementById('pom-focus').value||25); tab.brk=Math.max(1,+document.getElementById('pom-brk').value||5); tab.longBrk=Math.max(1,+document.getElementById('pom-long').value||15); tab.rounds=Math.max(1,+document.getElementById('pom-rounds').value||4); if(rt.iv){clearInterval(rt.iv);rt.iv=null;} runtime[tab.id]={phase:'focus',focusCount:0,total:tab.focus*60,remaining:tab.focus*60,running:false,endTs:0,pLogged:0,iv:null}; saveRt(tab); renderCustom(); };
     ['pom-focus','pom-brk','pom-long','pom-rounds'].forEach(id=>{ document.getElementById(id).onchange=applyCfg; });
-    document.getElementById('pom-start').onclick=()=>{ if(rt.running){ rt.remaining=Math.max(0,(rt.endTs-Date.now())/1000); rt.running=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} } else { rt.running=true; rt.endTs=Date.now()+rt.remaining*1000; if(!rt.iv) rt.iv=setInterval(()=>pomTick(tab),250); } saveRt(tab); renderCustom(); };
-    document.getElementById('pom-skip').onclick=()=>{ advancePomo(rt,tab); renderCustom(); };
-    document.getElementById('pom-reset').onclick=()=>{ if(rt.iv){clearInterval(rt.iv);rt.iv=null;} runtime[tab.id]={phase:'focus',focusCount:0,total:tab.focus*60,remaining:tab.focus*60,running:false,endTs:0,iv:null}; saveRt(tab); renderCustom(); };
+    document.getElementById('pom-start').onclick=()=>{ if(rt.running){ rt.remaining=Math.max(0,(rt.endTs-Date.now())/1000); rt.running=false; if(rt.iv){clearInterval(rt.iv);rt.iv=null;} if(rt.phase==='focus') bankFocus(tab,rt,rt.total-rt.remaining,'pLogged'); } else { rt.running=true; rt.endTs=Date.now()+rt.remaining*1000; if(!rt.iv) rt.iv=setInterval(()=>pomTick(tab),250); } saveRt(tab); renderCustom(); };
+    document.getElementById('pom-skip').onclick=()=>{ if(rt.phase==='focus'){ const el2=rt.running?Math.max(0,(rt.endTs-Date.now())/1000):rt.remaining; bankFocus(tab,rt,rt.total-el2,'pLogged'); } advancePomo(rt,tab); renderCustom(); };
+    document.getElementById('pom-reset').onclick=()=>{ if(rt.iv){clearInterval(rt.iv);rt.iv=null;} runtime[tab.id]={phase:'focus',focusCount:0,total:tab.focus*60,remaining:tab.focus*60,running:false,endTs:0,pLogged:0,iv:null}; saveRt(tab); renderCustom(); };
     pomTick(tab);
     if(rt.running&&!rt.iv) rt.iv=setInterval(()=>pomTick(tab),250);
   }
   function pomTick(tab){
     const rt=runtime[tab.id]; if(!rt) return;
     if(rt.running){ rt.remaining=Math.max(0,(rt.endTs-Date.now())/1000);
-      if(rt.remaining<=0){ beep(rt.phase==='focus'?3:2); toast(rt.phase==='focus'?'✅ Focus done — break time':'▶ Break over — back to focus'); advancePomo(rt,tab); if(activeTab==='custom:'+tab.id) renderCustom(); return; } }
+      if(rt.remaining<=0){ if(rt.phase==='focus') bankFocus(tab,rt,rt.total,'pLogged'); beep(rt.phase==='focus'?3:2); toast(rt.phase==='focus'?'✅ Focus done — break time':'▶ Break over — back to focus'); advancePomo(rt,tab); if(activeTab==='custom:'+tab.id) renderCustom(); return; } }
     const clock=document.getElementById('pom-clock-'+tab.id); const ring=document.getElementById('pom-ring-'+tab.id);
     if(clock) clock.textContent=fmtClock(rt.remaining);
     setRing(ring, rt.total>0?rt.remaining/rt.total:0);
