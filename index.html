@@ -440,6 +440,22 @@
   .heat-legend .hl.lvl2{background:#a8e0a0;border-color:transparent;}
   .heat-legend .hl.lvl3{background:#5fb85a;border-color:transparent;}
   .heat-legend .hl.lvl4{background:#2f8f3a;border-color:transparent;}
+
+  /* ---- consistency garden ---- */
+  .garden-stage{display:flex;justify-content:center;align-items:flex-end;padding:4px 0 2px;min-height:150px;}
+  .plant-svg{width:160px;max-width:78%;height:auto;transform-origin:50% 95%;}
+  @keyframes sway{0%,100%{transform:rotate(-1.4deg);}50%{transform:rotate(1.4deg);}}
+  .garden-stage:not(.wilt) .plant-svg{animation:sway 4.8s ease-in-out infinite;}
+  .garden-stage.wilt .plant-svg{transform:rotate(3deg);opacity:.9;}
+  .garden-cap{text-align:center;font-family:'Fraunces',serif;font-size:17px;font-weight:600;color:var(--ink);}
+  .garden-sub{text-align:center;font-size:12.5px;color:var(--ink-soft);margin-top:3px;line-height:1.4;}
+  .garden-ladder{display:flex;flex-direction:column;gap:5px;}
+  .gl-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line-soft);border-radius:9px;opacity:.55;}
+  .gl-row.done{opacity:1;}
+  .gl-row.on{border-color:var(--accent);box-shadow:0 0 0 1.5px var(--accent) inset;opacity:1;}
+  .gl-emoji{font-size:17px;}
+  .gl-name{flex:1;font-size:14px;font-weight:600;color:var(--ink);}
+  .gl-min{font-size:12px;color:var(--ink-soft);}
 </style>
 </head>
 <body>
@@ -483,6 +499,7 @@
     {id:'coi',       label:'COI Articles',         size:'full', star:true},
     {id:'weekreview',label:'Weekly Review',        size:'full', star:true},
     {id:'momentum',  label:'Momentum (streak·hours·calendar)', size:'full', star:true},
+    {id:'garden',    label:'Consistency Garden',   size:'half', star:true},
     {id:'photonotes',label:'Photo Notes',         size:'full', star:true},
     {id:'countdown', label:'Exam countdown',      size:'full'},
     {id:'today',     label:"Today's study",       size:'half'},
@@ -583,6 +600,7 @@
   function rgbToHex(r){ return '#'+r.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join(''); }
   function mix(a,b,t){ const A=hexToRgb(a),B=hexToRgb(b); return rgbToHex([A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t]); }
   function blankState(){ return { settings:{tasks:DEFAULT_TASKS.slice()}, appName:'Track your day', theme:{mode:'light',accent:'terracotta'}, days:{}, weekly:[], monthly:[], weeks:{}, months:{}, series:[], syllabus:[], syllabusInit:false, resTypes:DEFAULT_RES_TYPES.slice(), resourceTabs:defaultResourceTabs(), customTabs:[], hiddenBuiltins:[], exams:[], dashWidgets:DEFAULT_DASH_WIDGETS.slice(), hoursGoal:0, dashStickies:[], dashSizes:{}, photoNotes:[], customQuotes:[], customCOI:[], weeklyReviews:{} }; }
+  function normLog(l){ const out={}; if(l&&typeof l==='object'){ Object.keys(l).forEach(k=>{ const v=+l[k]; if(/^\d{4}-\d{2}-\d{2}$/.test(k)&&v>0) out[k]=Math.round(v); }); } return out; }
   function normCustomTabs(ct){
     if(!Array.isArray(ct)) return [];
     return ct.map(t=>{
@@ -596,8 +614,8 @@
         case 'targets': return {...base, items:Array.isArray(t.items)?t.items.map(i=>({id:i.id||uid(),title:i.title||'',deadline:i.deadline||'',done:!!i.done,created:i.created||todayStr()})):[]};
         case 'progress': return {...base, items:Array.isArray(t.items)?t.items.map(i=>({id:i.id||uid(),name:i.name||'',pct:Math.max(0,Math.min(100,+i.pct||0))})):[]};
         case 'counter': return {...base, items:Array.isArray(t.items)?t.items.map(i=>({id:i.id||uid(),name:i.name||'',count:+i.count||0,step:+i.step||1,goal:(i.goal===''||i.goal==null)?'':+i.goal})):[]};
-        case 'timer': return {...base, minutes:+t.minutes||10, seconds:+t.seconds||0, autolog:t.autolog!==false, logSubject:t.logSubject||'', rt:(t.rt&&typeof t.rt==='object')?t.rt:null};
-        case 'pomodoro': return {...base, focus:+t.focus||25, brk:+t.brk||5, longBrk:+t.longBrk||15, rounds:+t.rounds||4, autolog:t.autolog!==false, logSubject:t.logSubject||'', rt:(t.rt&&typeof t.rt==='object')?t.rt:null};
+        case 'timer': return {...base, minutes:+t.minutes||10, seconds:+t.seconds||0, autolog:t.autolog!==false, logSubject:t.logSubject||'', showGarden:t.showGarden!==false, log:normLog(t.log), rt:(t.rt&&typeof t.rt==='object')?t.rt:null};
+        case 'pomodoro': return {...base, focus:+t.focus||25, brk:+t.brk||5, longBrk:+t.longBrk||15, rounds:+t.rounds||4, autolog:t.autolog!==false, logSubject:t.logSubject||'', showGarden:t.showGarden!==false, log:normLog(t.log), rt:(t.rt&&typeof t.rt==='object')?t.rt:null};
         case 'notes': return {...base, notes:Array.isArray(t.notes)?t.notes.map(n=>({id:n.id||uid(),title:n.title||'',body:n.body||'',img:n.img||'',link:(n.link&&n.link.url)?{url:String(n.link.url),label:n.link.label||''}:null,ts:n.ts||Date.now()})):[]};
         default: return null;
       }
@@ -1000,6 +1018,68 @@
       <div class="hd-list">${subjArr.length?subjArr.map(x=>`<div class="hd-row"><span class="hd-lab">${esc(x.k)}</span><div class="hd-track"><span style="width:${Math.round(x.h/maxSub*100)}%"></span></div><span class="hd-val">${x.h.toFixed(1)}</span></div>`).join(''):'<div class="mini-note">No study hours logged in the last 30 days.</div>'}</div>`);
     document.getElementById('mo-x').onclick=closeUiModal;
   }
+  const STAGES=[{min:1,name:'Sprout',emoji:'🌱'},{min:3,name:'Seedling',emoji:'🌱'},{min:7,name:'Young plant',emoji:'🌿'},{min:14,name:'Leafy bush',emoji:'🌿'},{min:21,name:'Sapling',emoji:'🌳'},{min:30,name:'Tree',emoji:'🌳'},{min:60,name:'Flowering tree',emoji:'🌸'}];
+  function stageIdx(n){ let idx=-1; for(let i=0;i<STAGES.length;i++){ if(n>=STAGES[i].min) idx=i; } return idx; }
+  function plantSVG(idx,wilt){
+    const pot=`<path d="M40 97 H80 L75 128 Q60 132 45 128 Z" fill="var(--accent)"/><rect x="35" y="91" width="50" height="8" rx="3" fill="var(--accent-deep)"/><ellipse cx="60" cy="97" rx="22" ry="3.4" fill="rgba(0,0,0,.10)"/>`;
+    if(idx<0){ return `<svg viewBox="0 0 120 135" class="plant-svg">${pot}<ellipse cx="60" cy="92" rx="4.5" ry="3" fill="#6b4a2e"/><path d="M56 92 q4 -5 8 0" stroke="#7a5636" stroke-width="1.6" fill="none"/></svg>`; }
+    const leafC=wilt?'#c2b463':'#5fb85a', leafD=wilt?'#9c8f44':'#3f7d3a', stemC=wilt?'#8d8040':'#4f7d3a';
+    const topY=[84,78,68,58,50,40,32][idx], sw=[3,3,4,5,6,7,8][idx];
+    const tipX=wilt?70:60, tipY=wilt?topY+5:topY;
+    const stem=wilt?`<path d="M60 96 Q 63 ${((96+topY)/2)|0} ${tipX} ${tipY}" stroke="${stemC}" stroke-width="${sw}" fill="none" stroke-linecap="round"/>`
+                   :`<line x1="60" y1="96" x2="60" y2="${topY}" stroke="${stemC}" stroke-width="${sw}" stroke-linecap="round"/>`;
+    let g=stem;
+    if(idx<=2){
+      const pairs=idx+1;
+      for(let i=0;i<pairs;i++){ const ly=90-i*((90-topY)/pairs)-6; g+=`<ellipse cx="51" cy="${ly}" rx="9" ry="5" fill="${leafC}" transform="rotate(-32 51 ${ly})"/><ellipse cx="69" cy="${ly-3}" rx="9" ry="5" fill="${leafD}" transform="rotate(32 69 ${ly-3})"/>`; }
+    } else {
+      const r=[0,0,0,14,17,21,24][idx], cx=tipX, cy=tipY;
+      g+=`<circle cx="${cx-r*0.5}" cy="${cy+r*0.3}" r="${r*0.8}" fill="${leafD}"/><circle cx="${cx+r*0.5}" cy="${cy+r*0.3}" r="${r*0.8}" fill="${leafD}"/><circle cx="${cx-r*0.6}" cy="${cy-r*0.2}" r="${r*0.72}" fill="${leafC}"/><circle cx="${cx+r*0.6}" cy="${cy-r*0.2}" r="${r*0.72}" fill="${leafC}"/><circle cx="${cx}" cy="${cy-r*0.45}" r="${r}" fill="${leafC}"/>`;
+      if(idx>=6){ const fx=[cx-9,cx+10,cx-2,cx+5,cx-13], fy=[cy-11,cy-5,cy+5,cy-15,cy+2]; for(let i=0;i<5;i++) g+=`<circle cx="${fx[i]}" cy="${fy[i]}" r="2.7" fill="var(--accent)"/>`; }
+    }
+    const fallen=wilt?`<ellipse cx="46" cy="101" rx="6" ry="3.2" fill="${leafD}" transform="rotate(22 46 101)"/><ellipse cx="78" cy="103" rx="5" ry="2.7" fill="${leafC}" transform="rotate(-18 78 103)"/>`:'';
+    return `<svg viewBox="0 0 120 135" class="plant-svg">${g}${pot}${fallen}</svg>`;
+  }
+  function wGarden(){
+    const t=todayStr(); let cur=0,c=t; if(!dayActive(c))c=addDays(c,-1); while(dayActive(c)){cur++;c=addDays(c,-1);}
+    const activeToday=dayActive(t); const wilt=cur===0;
+    let prevRun=0; if(wilt){ let last=null,p=t,guard=0; while(guard++<500){ if(dayActive(p)){last=p;break;} p=addDays(p,-1);} if(last){ let q=last; while(dayActive(q)){prevRun++;q=addDays(q,-1);} } }
+    const sForStage=wilt?prevRun:cur; const idx=stageIdx(sForStage); const info=idx>=0?STAGES[idx]:null; const next=idx+1<STAGES.length?STAGES[idx+1]:null; const toNext=next?next.min-sForStage:0;
+    let cap,sub;
+    if(wilt){ if(prevRun===0){ cap='Plant your first seed'; sub='Log study today to start your garden.'; } else { cap='🥀 Your garden is thirsty'; sub=`Study today to revive your ${info.name.toLowerCase()} (was ${prevRun} days).`; } }
+    else { cap=`${info.emoji} ${info.name}`; sub=next?`${cur}-day streak · ${toNext} day${toNext===1?'':'s'} to a ${next.name.toLowerCase()}`:`${cur}-day streak · fully grown! 🎉`; if(!activeToday) sub+=' · water me today 💧'; }
+    return `<div class="card garden-card" id="garden-card" style="cursor:pointer;"><div class="section-head" style="margin-bottom:2px;"><div><h2 style="font-size:18px;">Consistency Garden</h2></div></div>
+      <div class="garden-stage ${wilt?'wilt':''}">${plantSVG(idx,wilt)}</div>
+      <div class="garden-cap">${cap}</div><div class="garden-sub">${sub}</div></div>`;
+  }
+  function openGardenDetail(){
+    const t=todayStr(); let cur=0,c=t; if(!dayActive(c))c=addDays(c,-1); while(dayActive(c)){cur++;c=addDays(c,-1);}
+    const actives=Object.keys(S.days).filter(d=>dayActive(d)).sort(); let best=0,run=0,prev=null; actives.forEach(d=>{ if(prev&&addDays(prev,1)===d)run++; else run=1; if(run>best)best=run; prev=d; });
+    const idx=stageIdx(cur);
+    openUiModal(`<button class="icon-btn modal-close" id="gd-x">✕</button><h3>Consistency Garden</h3>
+      <p class="lead">Your plant grows with every consecutive active day — any day you log study hours or tick a task. Miss a day and it wilts; study again to bring it back to life.</p>
+      <div class="hd-grid"><div class="hd-stat"><span>Current streak</span><b>${cur}d</b></div><div class="hd-stat"><span>Best streak</span><b>${best}d</b></div><div class="hd-stat"><span>Stage</span><b>${idx>=0?STAGES[idx].name:'Seed'}</b></div></div>
+      <h4 class="hd-h">Growth stages</h4>
+      <div class="garden-ladder">${STAGES.map((s,i)=>`<div class="gl-row ${i===idx?'on':''} ${cur>=s.min?'done':''}"><span class="gl-emoji">${s.emoji}</span><span class="gl-name">${s.name}</span><span class="gl-min">${s.min}+ days</span></div>`).join('')}</div>`);
+    document.getElementById('gd-x').onclick=closeUiModal;
+  }
+  function habitGardenHTML(tab){
+    const log=tab.log||{}; const t=todayStr();
+    let cur=0,c=t; if(!(log[c]>0))c=addDays(c,-1); while(log[c]>0){cur++;c=addDays(c,-1);}
+    const wilt=cur===0; let prevRun=0;
+    if(wilt){ let last=null,p=t,g=0; while(g++<500){ if(log[p]>0){last=p;break;} p=addDays(p,-1);} if(last){ let q=last; while(log[q]>0){prevRun++;q=addDays(q,-1);} } }
+    const sForStage=wilt?prevRun:cur; const idx=stageIdx(sForStage); const info=idx>=0?STAGES[idx]:null; const next=idx+1<STAGES.length?STAGES[idx+1]:null;
+    const todaySec=log[t]||0; let total=0,best=0,run=0,prev=null; const keys=Object.keys(log).sort(); keys.forEach(k=>{ total+=log[k]; if(prev&&addDays(prev,1)===k)run++; else run=1; if(run>best)best=run; prev=k; });
+    const cells=[]; for(let i=27;i>=0;i--){const d=addDays(t,-i); cells.push({d,s:log[d]||0});} const max=Math.max(1,...cells.map(x=>x.s));
+    let cap,sub;
+    if(wilt){ if(prevRun===0){ cap='Plant your first seed'; sub=`Spend time on “${esc(tab.name)}” today to start its garden.`; } else { cap='🥀 Thirsty'; sub=`Do it today to revive your ${info.name.toLowerCase()} (was ${prevRun} days).`; } }
+    else { cap=`${info.emoji} ${info.name}`; sub=next?`${cur}-day streak · ${next.min-sForStage} day${(next.min-sForStage)===1?'':'s'} to a ${next.name.toLowerCase()}`:`${cur}-day streak · fully grown! 🎉`; if(!(todaySec>0)) sub+=' · do it today 💧'; }
+    return `<div class="card garden-card" style="margin-top:16px;"><div class="section-head" style="margin-bottom:2px;"><div><h2 style="font-size:18px;">Habit Garden</h2><p style="margin:0;font-size:12px;color:var(--ink-soft);">Grows each day you log time here</p></div><span class="pill ${cur>0?'gold':''}">${cur}d 🔥</span></div>
+      <div class="garden-stage ${wilt?'wilt':''}">${plantSVG(idx,wilt)}</div>
+      <div class="garden-cap">${cap}</div><div class="garden-sub">${sub}</div>
+      <div class="mo-stats" style="margin-top:12px;"><div><b>${fmtDur(todaySec)}</b><span>today</span></div><div><b>${best}</b><span>best streak</span></div><div><b>${fmtDur(total)}</b><span>all-time</span></div></div>
+      <div class="heat" style="margin-top:12px;">${cells.map(x=>{const lvl=x.s<=0?0:Math.ceil(Math.min(1,x.s/max)*4);return `<div class="heat-cell lvl${lvl}" title="${x.d}: ${fmtDur(x.s)}"></div>`;}).join('')}</div></div>`;
+  }
   function wHours7(){ const t=todayStr(); const days=[]; let wk=0; for(let i=6;i>=0;i--){const d=addDays(t,-i);const h=dayHours(d);wk+=h;days.push({d,h});} const maxH=Math.max(2,...days.map(x=>x.h)); const avg=wk/7;
     return `<div class="card hours-card" id="hours7-card" style="cursor:pointer;"><div class="section-head" style="margin-bottom:8px;"><div><h2 style="font-size:18px;">Study Hours · 7 Days</h2></div><span class="pill gold">Avg ${avg.toFixed(1)} h/day</span></div><div class="bars">${days.map(x=>`<div class="bar-col ${x.d===t?'today':''}"><div class="bar" style="height:${Math.round((x.h/maxH)*100)}%">${x.h>0?`<span class="v">${x.h%1===0?x.h:x.h.toFixed(1)}</span>`:''}</div><div class="d">${weekday(x.d)}</div></div>`).join('')}</div><div class="hours-hint">Tap for full details →</div></div>`; }
   function openHoursDetail(){
@@ -1072,7 +1152,7 @@
   function wDeadlines(){ const t=todayStr(); const dls=collectDeadlines(); const showD=dls.slice(0,5); const moreD=dls.length-showD.length; return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Deadlines</h2></div>${dls.length?`<span class="pill ${dls.some(d=>d.overdue)?'red':'gold'}">${dls.length} open</span>`:''}</div>${showD.length?showD.map(d=>`<div class="dl-row" data-go="${d.srcTab}" data-period="${esc(d.period||'')}"><div class="dl-meta"><div class="dl-title">${esc(d.title)}</div><div class="dl-src">${esc(d.src)}</div></div><span class="pill ${d.overdue?'red':(d.deadline===t?'gold':'')}">${d.overdue?'Overdue':(daysUntil(d.deadline)===0?'Today':'in '+daysUntil(d.deadline)+'d')}</span></div>`).join('')+(moreD>0?`<div class="dl-more">+${moreD} more</div>`:''):`<div class="mini-note">Nothing due — add deadlines to your weekly, monthly or target tabs.</div>`}</div>`; }
   function wLatest(){ let latest=null; S.series.forEach(s=>s.tests.forEach(t2=>{ if(!latest||(t2.date||'')>(latest.date||'')) latest={...t2,series:s.name}; })); return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Latest Test</h2></div>${latest?`<span class="pill ${(latest.scored/latest.total*100)>=50?'green':(latest.scored/latest.total*100)>=35?'gold':'red'}">${Math.round(latest.scored/latest.total*100)}%</span>`:''}</div>${latest?`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;"><div style="min-width:0;"><div style="font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(latest.topic||latest.series)}</div><div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">${esc(latest.series)} · ${fmtDate(latest.date)}</div></div><div class="score-tag" style="font-size:26px;color:var(--accent);white-space:nowrap;">${latest.scored}<span style="color:var(--ink-faint);font-size:15px;">/${latest.total}</span></div></div><button class="btn ghost sm" id="dash-tests" style="margin-top:14px;">View test series</button>`:`<div class="mini-note">No tests logged yet. <button class="linkbtn" id="dash-tests2">Log your first →</button></div>`}</div>`; }
 
-  const WBUILD={focus:wFocus,top3:wTop3,hoursgoal:wHoursGoal,stickies:wStickies,quote:wQuote,coi:wCOI,weekreview:wWeekReview,momentum:wMomentum,photonotes:wPhotoNotes,countdown:wCountdown,today:wToday,streak:wStreak,calendar:wCalendar,hours7:wHours7,syllabus:wSyllabus,quick:wQuick,deadlines:wDeadlines,latest:wLatest};
+  const WBUILD={focus:wFocus,top3:wTop3,hoursgoal:wHoursGoal,stickies:wStickies,quote:wQuote,coi:wCOI,weekreview:wWeekReview,momentum:wMomentum,garden:wGarden,photonotes:wPhotoNotes,countdown:wCountdown,today:wToday,streak:wStreak,calendar:wCalendar,hours7:wHours7,syllabus:wSyllabus,quick:wQuick,deadlines:wDeadlines,latest:wLatest};
 
   function quotePool(){ return QUOTES.concat(S.customQuotes||[]); }
   function coiPool(){ return COI_ARTICLES.concat(S.customCOI||[]); }
@@ -1218,6 +1298,7 @@
     const hc=document.getElementById('hours7-card'); if(hc) hc.onclick=openHoursDetail;
     const wro=document.getElementById('wr-open'); if(wro) wro.onclick=openWeekReview;
     const moc=document.getElementById('momentum-card'); if(moc) moc.onclick=openMomentumDetail;
+    const gc=document.getElementById('garden-card'); if(gc) gc.onclick=openGardenDetail;
     const dt1=document.getElementById('dash-tests'); if(dt1) dt1.onclick=()=>goAny('tests');
     const dt2=document.getElementById('dash-tests2'); if(dt2) dt2.onclick=()=>goAny('tests');
   }
@@ -1624,7 +1705,8 @@
   function stopRuntime(id){ const rt=runtime[id]; if(rt&&rt.iv){ clearInterval(rt.iv); } delete runtime[id]; }
   function saveRt(tab){ const rt=runtime[tab.id]; if(!rt){ tab.rt=null; persist(); return; } const c={}; for(const k in rt){ if(k!=='iv') c[k]=rt[k]; } tab.rt=c; persist(); }
   function logStudySeconds(subject, secs){ secs=Math.round(secs); if(secs<5) return 0; const o=dayObj(todayStr()); if(!Array.isArray(o.hours)) o.hours=[]; const name=((subject||'').trim())||'Focus'; let row=o.hours.find(h=>h._auto&&h.s===name); if(!row){ row={s:name,h:0,_auto:true}; o.hours.push(row); } row.h=Math.round(((parseFloat(row.h)||0)+secs/3600)*100)/100; persist(); return secs; }
-  function bankFocus(tab,rt,totalNowSec,loggedField){ if(!tab.autolog) return; const logged=rt[loggedField]||0; const delta=totalNowSec-logged; if(delta<5) return; const got=logStudySeconds(tab.logSubject||tab.name, delta); rt[loggedField]=totalNowSec; if(got){ const m=Math.round(got/60); toast('Logged '+(m>=60?(Math.floor(m/60)+'h '+(m%60)+'m'):m+'m')+' to today’s hours'); } saveRt(tab); }
+  function fmtDur(sec){ sec=Math.round(sec||0); if(sec<60) return sec+'s'; const m=Math.round(sec/60); if(m<60) return m+'m'; const h=Math.floor(m/60),mm=m%60; return h+'h'+(mm?(' '+mm+'m'):''); }
+  function bankFocus(tab,rt,totalNowSec,loggedField){ const logged=rt[loggedField]||0; const delta=totalNowSec-logged; if(delta<5) return; rt[loggedField]=totalNowSec; if(!tab.log||typeof tab.log!=='object') tab.log={}; const d=todayStr(); tab.log[d]=Math.round((tab.log[d]||0)+delta); let msg; if(tab.autolog){ logStudySeconds(tab.logSubject||tab.name, delta); msg='Logged '+fmtDur(delta)+' to today’s hours'; } else { msg='+'+fmtDur(delta)+' to '+tab.name; } saveRt(tab); if(msg) toast(msg); }
 
   /* ---- Timer & Stopwatch ---- */
   function renderTimer(tab,el){
@@ -1641,9 +1723,10 @@
         ${isCd?`<div class="add-bar" style="justify-content:center;"><div class="field" style="max-width:90px;"><label>Min</label><input type="number" id="tmr-min" min="0" value="${tab.minutes}" ${running?'disabled':''}></div><div class="field" style="max-width:90px;"><label>Sec</label><input type="number" id="tmr-sec" min="0" max="59" value="${tab.seconds}" ${running?'disabled':''}></div></div>`:''}
         <div class="timer-ctrls"><button class="btn" id="tmr-start">${running?'Pause':'Start'}</button><button class="btn ghost" id="tmr-reset">Reset</button></div>
         ${running?'<div class="mini-note" style="text-align:center;margin-top:10px;">Running — safe to refresh or close; it keeps counting.</div>':''}
-        <div class="autolog-row"><label class="al-toggle"><input type="checkbox" id="tmr-auto" ${tab.autolog?'checked':''}> Auto-log focus time to Daily hours</label><input type="text" id="tmr-subj" class="al-subj" placeholder="Subject (e.g. Polity)" value="${esc(tab.logSubject||'')}"></div></div>`;
+        <div class="autolog-row"><label class="al-toggle"><input type="checkbox" id="tmr-auto" ${tab.autolog?'checked':''}> Add to Daily study hours</label><label class="al-toggle"><input type="checkbox" id="tmr-garden" ${tab.showGarden!==false?'checked':''}> Habit garden</label><input type="text" id="tmr-subj" class="al-subj" placeholder="Subject (e.g. Polity)" value="${esc(tab.logSubject||'')}"></div></div>${tab.showGarden!==false?habitGardenHTML(tab):''}`;
     el.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{ rt.mode=b.dataset.mode; saveRt(tab); renderCustom(); });
     document.getElementById('tmr-auto').onchange=e=>{ tab.autolog=e.target.checked; persist(); };
+    document.getElementById('tmr-garden').onchange=e=>{ tab.showGarden=e.target.checked; persist(); renderCustom(); };
     document.getElementById('tmr-subj').onblur=e=>{ tab.logSubject=e.target.value; persist(); };
     if(isCd){
       const mi=document.getElementById('tmr-min'), se=document.getElementById('tmr-sec');
@@ -1703,8 +1786,9 @@
           <div class="field" style="max-width:100px;"><label>Long break</label><input type="number" id="pom-long" min="1" value="${tab.longBrk}"></div>
           <div class="field" style="max-width:90px;"><label>Rounds</label><input type="number" id="pom-rounds" min="1" value="${tab.rounds}"></div>
         </div>
-        <div class="autolog-row"><label class="al-toggle"><input type="checkbox" id="pom-auto" ${tab.autolog?'checked':''}> Auto-log focus time to Daily hours</label><input type="text" id="pom-subj" class="al-subj" placeholder="Subject (e.g. Polity)" value="${esc(tab.logSubject||'')}"></div></div>`;
+        <div class="autolog-row"><label class="al-toggle"><input type="checkbox" id="pom-auto" ${tab.autolog?'checked':''}> Add to Daily study hours</label><label class="al-toggle"><input type="checkbox" id="pom-garden" ${tab.showGarden!==false?'checked':''}> Habit garden</label><input type="text" id="pom-subj" class="al-subj" placeholder="Subject (e.g. Polity)" value="${esc(tab.logSubject||'')}"></div></div>${tab.showGarden!==false?habitGardenHTML(tab):''}`;
     document.getElementById('pom-auto').onchange=e=>{ tab.autolog=e.target.checked; persist(); };
+    document.getElementById('pom-garden').onchange=e=>{ tab.showGarden=e.target.checked; persist(); renderCustom(); };
     document.getElementById('pom-subj').onblur=e=>{ tab.logSubject=e.target.value; persist(); };
     const applyCfg=()=>{ tab.focus=Math.max(1,+document.getElementById('pom-focus').value||25); tab.brk=Math.max(1,+document.getElementById('pom-brk').value||5); tab.longBrk=Math.max(1,+document.getElementById('pom-long').value||15); tab.rounds=Math.max(1,+document.getElementById('pom-rounds').value||4); if(rt.iv){clearInterval(rt.iv);rt.iv=null;} runtime[tab.id]={phase:'focus',focusCount:0,total:tab.focus*60,remaining:tab.focus*60,running:false,endTs:0,pLogged:0,iv:null}; saveRt(tab); renderCustom(); };
     ['pom-focus','pom-brk','pom-long','pom-rounds'].forEach(id=>{ document.getElementById(id).onchange=applyCfg; });
