@@ -94,7 +94,7 @@
   .date-nav{display:flex;align-items:center;gap:10px;}
   .date-nav .arrow{border:1px solid var(--line);background:var(--card);border-radius:10px;width:38px;height:38px;font-size:18px;color:var(--ink-soft);display:grid;place-items:center;}
   .date-nav .arrow:hover{color:var(--ink);border-color:var(--ink-soft);}
-  .date-nav input[type=date],.date-nav input[type=month]{height:38px;padding:0 10px;}
+  .date-nav input[type=date],.date-nav input[type=month]{height:38px;padding:0 10px;background:var(--surface-hi);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-weight:600;}
 
   .task-row{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line-soft);}
   .task-row:last-child{border-bottom:none;}
@@ -1481,8 +1481,8 @@
     const tasks=getBucket(kind,key,false).tasks;
     const done=tasks.filter(x=>x.done).length, tot=tasks.length, pct=tot?Math.round(done/tot*100):0;
     let label, isCur, nav;
-    if(isW){ const s=key,e=addDays(key,6); label=`${fmtDateShort(s)} – ${fmtDateShort(e)}, ${new Date(e+'T00:00:00').getFullYear()}`; isCur=key===weekStart(todayStr()); nav=`<input type="date" class="p-date" value="${key}" style="width:auto;">`; }
-    else { label=new Date(key+'-01T00:00:00').toLocaleDateString(undefined,{month:'long',year:'numeric'}); isCur=key===todayStr().slice(0,7); nav=`<input type="month" class="p-month" value="${key}" style="width:auto;max-width:160px;">`; }
+    if(isW){ const s=key,e=addDays(key,6); label=`${fmtDateShort(s)} – ${fmtDateShort(e)}, ${new Date(e+'T00:00:00').getFullYear()}`; isCur=key===weekStart(todayStr()); nav=`<input type="date" class="p-date" value="${key}" style="width:150px;">`; }
+    else { label=new Date(key+'-01T00:00:00').toLocaleDateString(undefined,{month:'long',year:'numeric'}); isCur=key===todayStr().slice(0,7); nav=`<input type="date" class="p-month" value="${key}-01" style="width:150px;">`; }
     el.innerHTML=`
       <div class="section-head"><div><h2>${isW?'Weekly':'Monthly'} Targets</h2><p>${label}${isCur?(isW?' · This week':' · This month'):''}</p></div>
         <div class="date-nav"><button class="arrow p-prev">‹</button>${nav}<button class="arrow p-next">›</button></div></div>
@@ -1495,7 +1495,7 @@
     q('.p-prev').onclick=()=>{ if(isW) curWeek=weekStart(addDays(curWeek,-7)); else curMonth=shiftMonth(curMonth,-1); re(); };
     q('.p-next').onclick=()=>{ if(isW) curWeek=weekStart(addDays(curWeek,7)); else curMonth=shiftMonth(curMonth,1); re(); };
     if(isW){ const di=q('.p-date'); if(di) di.onchange=e=>{ if(e.target.value){ curWeek=weekStart(e.target.value); re(); } }; }
-    else { const mi=q('.p-month'); if(mi) mi.onchange=e=>{ if(e.target.value){ curMonth=e.target.value; re(); } }; }
+    else { const mi=q('.p-month'); if(mi) mi.onchange=e=>{ if(e.target.value){ curMonth=e.target.value.slice(0,7); re(); } }; }
     const addT=()=>{ const n=q('.p-new'); const v=n.value.trim(); if(!v){n.focus();return;} getBucket(kind,key,true).tasks.push({id:uid(),text:v,done:false}); persist(); re(); toast('Target added'); };
     q('.p-add').onclick=addT;
     q('.p-new').onkeydown=e=>{ if(e.key==='Enter') addT(); };
