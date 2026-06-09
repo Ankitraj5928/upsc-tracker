@@ -456,6 +456,7 @@
   .gl-emoji{font-size:17px;}
   .gl-name{flex:1;font-size:14px;font-weight:600;color:var(--ink);}
   .gl-min{font-size:12px;color:var(--ink-soft);}
+  .habit-heat{grid-template-columns:repeat(14,1fr);max-width:340px;margin-left:auto;margin-right:auto;gap:4px;}
 </style>
 </head>
 <body>
@@ -1063,23 +1064,33 @@
       <div class="garden-ladder">${STAGES.map((s,i)=>`<div class="gl-row ${i===idx?'on':''} ${cur>=s.min?'done':''}"><span class="gl-emoji">${s.emoji}</span><span class="gl-name">${s.name}</span><span class="gl-min">${s.min}+ days</span></div>`).join('')}</div>`);
     document.getElementById('gd-x').onclick=closeUiModal;
   }
-  function habitGardenHTML(tab){
-    const log=tab.log||{}; const t=todayStr();
-    let cur=0,c=t; if(!(log[c]>0))c=addDays(c,-1); while(log[c]>0){cur++;c=addDays(c,-1);}
+  function habitStats(tab,live){
+    live=live||0; const log=tab.log||{}; const t=todayStr(); const todayEff=(log[t]||0)+live;
+    const val=d=> d===t? todayEff : (log[d]||0);
+    let cur=0,c=t; if(!(val(c)>0))c=addDays(c,-1); while(val(c)>0){cur++;c=addDays(c,-1);}
     const wilt=cur===0; let prevRun=0;
-    if(wilt){ let last=null,p=t,g=0; while(g++<500){ if(log[p]>0){last=p;break;} p=addDays(p,-1);} if(last){ let q=last; while(log[q]>0){prevRun++;q=addDays(q,-1);} } }
-    const sForStage=wilt?prevRun:cur; const idx=stageIdx(sForStage); const info=idx>=0?STAGES[idx]:null; const next=idx+1<STAGES.length?STAGES[idx+1]:null;
-    const todaySec=log[t]||0; let total=0,best=0,run=0,prev=null; const keys=Object.keys(log).sort(); keys.forEach(k=>{ total+=log[k]; if(prev&&addDays(prev,1)===k)run++; else run=1; if(run>best)best=run; prev=k; });
-    const cells=[]; for(let i=27;i>=0;i--){const d=addDays(t,-i); cells.push({d,s:log[d]||0});} const max=Math.max(1,...cells.map(x=>x.s));
-    let cap,sub;
-    if(wilt){ if(prevRun===0){ cap='Plant your first seed'; sub=`Spend time on “${esc(tab.name)}” today to start its garden.`; } else { cap='🥀 Thirsty'; sub=`Do it today to revive your ${info.name.toLowerCase()} (was ${prevRun} days).`; } }
-    else { cap=`${info.emoji} ${info.name}`; sub=next?`${cur}-day streak · ${next.min-sForStage} day${(next.min-sForStage)===1?'':'s'} to a ${next.name.toLowerCase()}`:`${cur}-day streak · fully grown! 🎉`; if(!(todaySec>0)) sub+=' · do it today 💧'; }
-    return `<div class="card garden-card" style="margin-top:16px;"><div class="section-head" style="margin-bottom:2px;"><div><h2 style="font-size:18px;">Habit Garden</h2><p style="margin:0;font-size:12px;color:var(--ink-soft);">Grows each day you log time here</p></div><span class="pill ${cur>0?'gold':''}">${cur}d 🔥</span></div>
-      <div class="garden-stage ${wilt?'wilt':''}">${plantSVG(idx,wilt)}</div>
-      <div class="garden-cap">${cap}</div><div class="garden-sub">${sub}</div>
-      <div class="mo-stats" style="margin-top:12px;"><div><b>${fmtDur(todaySec)}</b><span>today</span></div><div><b>${best}</b><span>best streak</span></div><div><b>${fmtDur(total)}</b><span>all-time</span></div></div>
-      <div class="heat" style="margin-top:12px;">${cells.map(x=>{const lvl=x.s<=0?0:Math.ceil(Math.min(1,x.s/max)*4);return `<div class="heat-cell lvl${lvl}" title="${x.d}: ${fmtDur(x.s)}"></div>`;}).join('')}</div></div>`;
+    if(wilt){ let last=null,p=t,g=0; while(g++<500){ if(val(p)>0){last=p;break;} p=addDays(p,-1);} if(last){ let q=last; while(val(q)>0){prevRun++;q=addDays(q,-1);} } }
+    let total=live; Object.keys(log).forEach(k=>total+=log[k]);
+    const active=Object.keys(log).filter(k=>log[k]>0); if(todayEff>0&&active.indexOf(t)<0)active.push(t); active.sort();
+    let best=0,run=0,prev=null; active.forEach(d=>{ if(prev&&addDays(prev,1)===d)run++; else run=1; if(run>best)best=run; prev=d; });
+    return {cur,wilt,prevRun,todayEff,total,best};
   }
+  function habitGardenHTML(tab,live){
+    const st=habitStats(tab,live); const log=tab.log||{}; const t=todayStr();
+    const sForStage=st.wilt?st.prevRun:st.cur; const idx=stageIdx(sForStage); const info=idx>=0?STAGES[idx]:null; const next=idx+1<STAGES.length?STAGES[idx+1]:null;
+    const cells=[]; for(let i=27;i>=0;i--){const d=addDays(t,-i); cells.push({d,s:d===t?st.todayEff:(log[d]||0)});} const max=Math.max(1,...cells.map(x=>x.s));
+    let cap,sub;
+    if(st.wilt){ if(st.prevRun===0){ cap='Plant your first seed'; sub=`Spend time on “${esc(tab.name)}” today to start its garden.`; } else { cap='🥀 Thirsty'; sub=`Do it today to revive your ${info.name.toLowerCase()} (was ${st.prevRun} days).`; } }
+    else { cap=`${info.emoji} ${info.name}`; sub=next?`${st.cur}-day streak · ${next.min-sForStage} day${(next.min-sForStage)===1?'':'s'} to a ${next.name.toLowerCase()}`:`${st.cur}-day streak · fully grown! 🎉`; if(!(st.todayEff>0)) sub+=' · do it today 💧'; }
+    return `<div class="card garden-card" style="margin-top:16px;"><div class="section-head" style="margin-bottom:2px;"><div><h2 style="font-size:18px;">Habit Garden</h2><p style="margin:0;font-size:12px;color:var(--ink-soft);">Grows with your streak; today's time waters it live</p></div><span class="pill ${st.cur>0?'gold':''}">${st.cur}d 🔥</span></div>
+      <div class="garden-stage ${st.wilt?'wilt':''}">${plantSVG(idx,st.wilt)}</div>
+      <div class="garden-cap">${cap}</div><div class="garden-sub">${sub}</div>
+      <div class="mo-stats" style="margin-top:12px;"><div><b>${fmtDur(st.todayEff)}</b><span>today</span></div><div><b>${st.best}</b><span>best streak</span></div><div><b>${fmtDur(st.total)}</b><span>all-time</span></div></div>
+      <div class="heat habit-heat" style="margin-top:12px;">${cells.map(x=>{const lvl=x.s<=0?0:Math.ceil(Math.min(1,x.s/max)*4);return `<div class="heat-cell lvl${lvl}" title="${x.d}: ${fmtDur(x.s)}"></div>`;}).join('')}</div></div>`;
+  }
+  function timerLive(rt){ if(!rt) return 0; if(rt.mode==='cd'){ const rem=rt.cdRunning?Math.max(0,(rt.cdEndTs-Date.now())/1000):rt.cdRemaining; return Math.max(0,(rt.cdTotal-rem)-(rt.cdLogged||0)); } const el=rt.swAccum+(rt.swRunning?(Date.now()-rt.swStartTs)/1000:0); return Math.max(0, el-(rt.swLogged||0)); }
+  function pomoLive(rt){ if(!rt||rt.phase!=='focus') return 0; const rem=rt.running?Math.max(0,(rt.endTs-Date.now())/1000):rt.remaining; return Math.max(0,(rt.total-rem)-(rt.pLogged||0)); }
+  function updateHabitGarden(tab,live){ if(tab.showGarden===false) return; const cont=document.getElementById('habit-garden'); if(!cont) return; const st=habitStats(tab,live); const sForStage=st.wilt?st.prevRun:st.cur; const sig=st.cur+'/'+stageIdx(sForStage)+'/'+Math.round(st.todayEff/20); if(cont.dataset.sig===sig) return; cont.dataset.sig=sig; cont.innerHTML=habitGardenHTML(tab,live); }
   function wHours7(){ const t=todayStr(); const days=[]; let wk=0; for(let i=6;i>=0;i--){const d=addDays(t,-i);const h=dayHours(d);wk+=h;days.push({d,h});} const maxH=Math.max(2,...days.map(x=>x.h)); const avg=wk/7;
     return `<div class="card hours-card" id="hours7-card" style="cursor:pointer;"><div class="section-head" style="margin-bottom:8px;"><div><h2 style="font-size:18px;">Study Hours · 7 Days</h2></div><span class="pill gold">Avg ${avg.toFixed(1)} h/day</span></div><div class="bars">${days.map(x=>`<div class="bar-col ${x.d===t?'today':''}"><div class="bar" style="height:${Math.round((x.h/maxH)*100)}%">${x.h>0?`<span class="v">${x.h%1===0?x.h:x.h.toFixed(1)}</span>`:''}</div><div class="d">${weekday(x.d)}</div></div>`).join('')}</div><div class="hours-hint">Tap for full details →</div></div>`; }
   function openHoursDetail(){
@@ -1723,7 +1734,7 @@
         ${isCd?`<div class="add-bar" style="justify-content:center;"><div class="field" style="max-width:90px;"><label>Min</label><input type="number" id="tmr-min" min="0" value="${tab.minutes}" ${running?'disabled':''}></div><div class="field" style="max-width:90px;"><label>Sec</label><input type="number" id="tmr-sec" min="0" max="59" value="${tab.seconds}" ${running?'disabled':''}></div></div>`:''}
         <div class="timer-ctrls"><button class="btn" id="tmr-start">${running?'Pause':'Start'}</button><button class="btn ghost" id="tmr-reset">Reset</button></div>
         ${running?'<div class="mini-note" style="text-align:center;margin-top:10px;">Running — safe to refresh or close; it keeps counting.</div>':''}
-        <div class="autolog-row"><label class="al-toggle"><input type="checkbox" id="tmr-auto" ${tab.autolog?'checked':''}> Add to Daily study hours</label><label class="al-toggle"><input type="checkbox" id="tmr-garden" ${tab.showGarden!==false?'checked':''}> Habit garden</label><input type="text" id="tmr-subj" class="al-subj" placeholder="Subject (e.g. Polity)" value="${esc(tab.logSubject||'')}"></div></div>${tab.showGarden!==false?habitGardenHTML(tab):''}`;
+        <div class="autolog-row"><label class="al-toggle"><input type="checkbox" id="tmr-auto" ${tab.autolog?'checked':''}> Add to Daily study hours</label><label class="al-toggle"><input type="checkbox" id="tmr-garden" ${tab.showGarden!==false?'checked':''}> Habit garden</label><input type="text" id="tmr-subj" class="al-subj" placeholder="Subject (e.g. Polity)" value="${esc(tab.logSubject||'')}"></div></div>${tab.showGarden!==false?('<div id="habit-garden">'+habitGardenHTML(tab,timerLive(rt))+'</div>'):''}`;
     el.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{ rt.mode=b.dataset.mode; saveRt(tab); renderCustom(); });
     document.getElementById('tmr-auto').onchange=e=>{ tab.autolog=e.target.checked; persist(); };
     document.getElementById('tmr-garden').onchange=e=>{ tab.showGarden=e.target.checked; persist(); renderCustom(); };
@@ -1760,6 +1771,7 @@
       if(clock) clock.textContent=fmtClock(elapsed);
       setRing(ring, (elapsed%60)/60);
     }
+    updateHabitGarden(tab, timerLive(rt));
   }
 
   /* ---- Pomodoro ---- */
@@ -1786,7 +1798,7 @@
           <div class="field" style="max-width:100px;"><label>Long break</label><input type="number" id="pom-long" min="1" value="${tab.longBrk}"></div>
           <div class="field" style="max-width:90px;"><label>Rounds</label><input type="number" id="pom-rounds" min="1" value="${tab.rounds}"></div>
         </div>
-        <div class="autolog-row"><label class="al-toggle"><input type="checkbox" id="pom-auto" ${tab.autolog?'checked':''}> Add to Daily study hours</label><label class="al-toggle"><input type="checkbox" id="pom-garden" ${tab.showGarden!==false?'checked':''}> Habit garden</label><input type="text" id="pom-subj" class="al-subj" placeholder="Subject (e.g. Polity)" value="${esc(tab.logSubject||'')}"></div></div>${tab.showGarden!==false?habitGardenHTML(tab):''}`;
+        <div class="autolog-row"><label class="al-toggle"><input type="checkbox" id="pom-auto" ${tab.autolog?'checked':''}> Add to Daily study hours</label><label class="al-toggle"><input type="checkbox" id="pom-garden" ${tab.showGarden!==false?'checked':''}> Habit garden</label><input type="text" id="pom-subj" class="al-subj" placeholder="Subject (e.g. Polity)" value="${esc(tab.logSubject||'')}"></div></div>${tab.showGarden!==false?('<div id="habit-garden">'+habitGardenHTML(tab,pomoLive(rt))+'</div>'):''}`;
     document.getElementById('pom-auto').onchange=e=>{ tab.autolog=e.target.checked; persist(); };
     document.getElementById('pom-garden').onchange=e=>{ tab.showGarden=e.target.checked; persist(); renderCustom(); };
     document.getElementById('pom-subj').onblur=e=>{ tab.logSubject=e.target.value; persist(); };
@@ -1805,6 +1817,7 @@
     const clock=document.getElementById('pom-clock-'+tab.id); const ring=document.getElementById('pom-ring-'+tab.id);
     if(clock) clock.textContent=fmtClock(rt.remaining);
     setRing(ring, rt.total>0?rt.remaining/rt.total:0);
+    updateHabitGarden(tab, pomoLive(rt));
   }
 
   /* ===================== EXPORT / IMPORT ===================== */
