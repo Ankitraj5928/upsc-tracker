@@ -161,6 +161,14 @@
   .ts-air{background:var(--accent-soft,#fdf0ea);color:var(--accent);}
   .ts-ratings{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;}
   .ts-notes{font-size:12.5px;color:var(--ink-soft);margin-top:8px;padding-top:8px;border-top:1px solid var(--line-soft);line-height:1.5;}
+  .ts-syl{font-size:12.5px;color:var(--ink-soft);margin-top:8px;line-height:1.5;}
+  .ts-syl-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--accent);background:var(--accent-soft,#fdf0ea);padding:1px 7px;border-radius:6px;margin-right:5px;}
+  .up-next{background:var(--accent);color:#fff;border-radius:14px;padding:16px 18px;margin-bottom:14px;text-align:center;}
+  .up-next-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.6px;opacity:.85;}
+  .up-next-days{font-family:'Fraunces',serif;font-size:32px;font-weight:700;line-height:1.1;margin:2px 0;}
+  .up-next-meta{font-size:12.5px;opacity:.92;}
+  .up-countdown{font-weight:700;color:var(--accent);font-size:14px;}
+  .ts-card-past{opacity:.6;}
   .ts-essays{display:flex;flex-direction:column;gap:4px;margin-top:6px;}
   .ts-ess{font-size:12.5px;color:var(--ink-soft);}
   .ts-ess b{color:var(--ink);font-weight:700;}
@@ -530,6 +538,7 @@
     {id:'weekly',   label:'Weekly Targets',  icon:'◷'},
     {id:'monthly',  label:'Monthly Targets', icon:'◑'},
     {id:'tests',    label:'Test Series',     icon:'✓'},
+    {id:'upcoming', label:'Upcoming Tests',  icon:'⏰'},
     {id:'syllabus', label:'Syllabus',        icon:'▤'}
   ];
   const BUILTIN_IDS=BUILTINS.map(b=>b.id);
@@ -645,8 +654,8 @@
   function hexToRgb(h){ h=(h||'').replace('#',''); if(h.length===3)h=h.split('').map(c=>c+c).join(''); const n=parseInt(h||'0',16); return [(n>>16)&255,(n>>8)&255,n&255]; }
   function rgbToHex(r){ return '#'+r.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join(''); }
   function mix(a,b,t){ const A=hexToRgb(a),B=hexToRgb(b); return rgbToHex([A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t]); }
-  function blankTestSeries(){const mk=()=>({tests:[]});return{prelims:{GS:mk(),CSAT:mk()},mains:{GS1:mk(),GS2:mk(),GS3:mk(),GS4:mk(),Essay:mk()},sociology:{Paper1:mk(),Paper2:mk()},cutoffs:{gs:110,csat:66}};}
-  function normTestSeries(o){if(!o||typeof o!=='object')return blankTestSeries();const mk=s=>({tests:Array.isArray(s&&s.tests)?s.tests.map(t=>({...t})):[]});const p=o.prelims||{},m=o.mains||{},so=o.sociology||{},c=o.cutoffs||{};return{prelims:{GS:mk(p.GS),CSAT:mk(p.CSAT)},mains:{GS1:mk(m.GS1),GS2:mk(m.GS2),GS3:mk(m.GS3),GS4:mk(m.GS4),Essay:mk(m.Essay)},sociology:{Paper1:mk(so.Paper1),Paper2:mk(so.Paper2)},cutoffs:{gs:+c.gs||110,csat:+c.csat||66}};}
+  function blankTestSeries(){const mk=()=>({tests:[]});return{prelims:{GS:mk(),CSAT:mk()},mains:{GS1:mk(),GS2:mk(),GS3:mk(),GS4:mk(),Essay:mk()},sociology:{Paper1:mk(),Paper2:mk()},cutoffs:{gs:110,csat:66},upcoming:[]};}
+  function normTestSeries(o){if(!o||typeof o!=='object')return blankTestSeries();const mk=s=>({tests:Array.isArray(s&&s.tests)?s.tests.map(t=>({...t})):[]});const p=o.prelims||{},m=o.mains||{},so=o.sociology||{},c=o.cutoffs||{};return{prelims:{GS:mk(p.GS),CSAT:mk(p.CSAT)},mains:{GS1:mk(m.GS1),GS2:mk(m.GS2),GS3:mk(m.GS3),GS4:mk(m.GS4),Essay:mk(m.Essay)},sociology:{Paper1:mk(so.Paper1),Paper2:mk(so.Paper2)},cutoffs:{gs:+c.gs||110,csat:+c.csat||66},upcoming:Array.isArray(o.upcoming)?o.upcoming.map(u=>({...u})):[]};}
   const TS_PHASES=[{k:'prelims',l:'Prelims 📝',papers:['GS','CSAT']},{k:'mains',l:'Mains ✍️',papers:['GS1','GS2','GS3','GS4','Essay']},{k:'sociology',l:'Sociology 📚',papers:['Paper1','Paper2']}];
   const TS_LABELS={GS:'GS (100 Qs)',CSAT:'CSAT (80 Qs)',GS1:'GS Paper I',GS2:'GS Paper II',GS3:'GS Paper III',GS4:'GS Paper IV',Essay:'Essay',Paper1:'Sociology — Paper I',Paper2:'Sociology — Paper II'};
   const TS_SHORT={GS:'Pre. GS',CSAT:'CSAT',GS1:'GS–I',GS2:'GS–II',GS3:'GS–III',GS4:'GS–IV',Essay:'Essay',Paper1:'Socio. I',Paper2:'Socio. II'};
@@ -915,6 +924,7 @@
         <div class="view ${activeTab==='weekly'?'active':''}" id="v-weekly"></div>
         <div class="view ${activeTab==='monthly'?'active':''}" id="v-monthly"></div>
         <div class="view ${activeTab==='tests'?'active':''}" id="v-tests"></div>
+        <div class="view ${activeTab==='upcoming'?'active':''}" id="v-upcoming"></div>
         <div class="view ${activeTab==='syllabus'?'active':''}" id="v-syllabus"></div>
         <div class="view ${activeTab.indexOf('res:')===0?'active':''}" id="v-resource"></div>
         <div class="view ${activeTab.indexOf('custom:')===0?'active':''}" id="v-custom"></div>
@@ -938,7 +948,7 @@
     document.getElementById('btn-import').onclick=()=>document.getElementById('import-file').click();
     document.getElementById('import-file').onchange=doImport;
     wireMenu();
-    renderDashboard(); renderDaily(); renderWeekly(); renderMonthly(); renderTests(); renderSyllabus(); renderResource(); renderCustom();
+    renderDashboard(); renderDaily(); renderWeekly(); renderMonthly(); renderTests(); renderUpcoming(); renderSyllabus(); renderResource(); renderCustom();
   }
   function tabIcon(type){ const t=TAB_TYPES.find(x=>x.type===type); return t?t.icon:'▣'; }
 
@@ -1585,7 +1595,7 @@
         body=`<div class="ts-row"><span class="ts-sc" style="color:${col}">${sc||'—'}<small>/250</small></span>${pct?`<span class="ts-chip">${pct}%</span>`:''} ${t.evalScore?`<span class="ts-chip">Eval ${t.evalScore}/250</span>`:''} ${t.airRank?`<span class="ts-chip ts-air">AIR ${t.airRank}</span>`:''}</div>`;
         if(t.introR||t.structR||t.contR||t.conclR){const r=(v,l)=>v?`<span class="ts-chip">${l} ${'★'.repeat(Math.min(5,v))}${'☆'.repeat(5-Math.min(5,v))}</span>`:'';foot=`<div class="ts-ratings">${r(t.introR,'Intro')}${r(t.structR,'Struct')}${r(t.contR,'Content')}${r(t.conclR,'Concl')}</div>`;}
       }
-      return`<div class="ts-card"><div class="ts-card-head"><div class="ts-card-left"><span class="ts-no">Test ${t.testNo||'—'}</span>${t.code?`<span class="ts-code">[${esc(t.code)}]</span>`:''} ${t.testType?`<span class="ts-type">${esc(t.testType)}</span>`:''}</div><div class="ts-card-right"><span class="ts-date">${t.date?fmtDateShort(t.date):''}</span><button class="del ts-del-btn" data-idx="${i}">×</button></div></div>${body}${foot}${t.notes?`<div class="ts-notes">${esc(t.notes)}</div>`:''}</div>`;
+      return`<div class="ts-card"><div class="ts-card-head"><div class="ts-card-left"><span class="ts-no">Test ${t.testNo||'—'}</span>${t.code?`<span class="ts-code">[${esc(t.code)}]</span>`:''} ${t.testType?`<span class="ts-type">${esc(t.testType)}</span>`:''}</div><div class="ts-card-right"><span class="ts-date">${t.date?fmtDateShort(t.date):''}</span><button class="del ts-del-btn" data-idx="${i}">×</button></div></div>${body}${foot}${t.syllabus?`<div class="ts-syl"><span class="ts-syl-tag">Syllabus</span> ${esc(t.syllabus)}</div>`:''}${t.notes?`<div class="ts-notes">${esc(t.notes)}</div>`:''}</div>`;
     }).join('')}</div>`;
   }
 
@@ -1593,13 +1603,16 @@
     if(!S.testSeries)S.testSeries=blankTestSeries();
     const label=TS_LABELS[paper]||paper;
     const types=phase==='prelims'?['Fundamental','Applied','Full Length']:phase==='sociology'?['Fundamental','Advanced','Full Length']:['Fundamental','Advanced Sectional','Full Length'];
+    const showSyl=(phase==='mains'||phase==='sociology');
     const baseF=`<div class="grid g-2">
       <div class="field"><label>Test #</label><input type="number" id="tsf-no" min="1" placeholder="e.g. 1"></div>
       <div class="field"><label>Date</label><input type="date" id="tsf-date" value="${todayStr()}"></div>
-      <div class="field"><label>Test Type</label><select id="tsf-type"><option value="">— Select —</option>${types.map(t=>`<option>${t}</option>`).join('')}</select></div>
+      <div class="field"><label>Test Type</label><select id="tsf-type"><option value="">— Select —</option>${types.map(t=>`<option>${t}</option>`).join('')}<option value="__custom">+ Custom…</option></select></div>
       <div class="field"><label>Test Code</label><input type="text" id="tsf-code" placeholder="e.g. 5613"></div>
-      <div class="field"><label>AIR Rank (optional)</label><input type="number" id="tsf-air" min="1" placeholder="—"></div>
-    </div>`;
+    </div>
+    <div class="field" id="tsf-type-custom-wrap" style="display:none;margin-top:2px;"><label>Custom test type</label><input type="text" id="tsf-type-custom" placeholder="e.g. Revision Test / Mini Test"></div>
+    ${showSyl?`<div class="field" style="margin-top:2px;"><label>Syllabus / Topics covered</label><textarea id="tsf-syl" placeholder="e.g. Polity Part 1, Federalism, Constitutional Bodies..."></textarea></div>`:''}
+    <div class="field" style="margin-top:2px;"><label>AIR Rank (optional)</label><input type="number" id="tsf-air" min="1" placeholder="—"></div>`;
     let specF='';
     if(phase==='prelims'){
       const total=paper==='GS'?100:80;
@@ -1627,15 +1640,17 @@
         <div class="field"><label>Score /250</label><input type="number" id="tsf-score" min="0" max="250"></div>
         <div class="field"><label>Evaluator score /250</label><input type="number" id="tsf-eval" min="0" max="250" placeholder="optional"></div>
       </div>
-      ${phase==='mains'?`<div class="set-h" style="margin-top:4px;">Self Assessment (1–5)</div><div class="grid g-2">
+      <div class="set-h" style="margin-top:4px;">Self Assessment (1–5)</div><div class="grid g-2">
         <div class="field"><label>Intro quality</label><input type="number" id="tsf-intro" min="1" max="5" placeholder="1–5"></div>
         <div class="field"><label>Structure</label><input type="number" id="tsf-struct" min="1" max="5" placeholder="1–5"></div>
         <div class="field"><label>Content</label><input type="number" id="tsf-cont" min="1" max="5" placeholder="1–5"></div>
         <div class="field"><label>Conclusion</label><input type="number" id="tsf-concl" min="1" max="5" placeholder="1–5"></div>
-      </div>`:''}`;
+      </div>`;
     }
     openUiModal(`<button class="icon-btn modal-close" id="tsf-x">✕</button><h3>Log Test — ${esc(label)}</h3>${baseF}${specF}<div class="field" style="margin-top:10px;"><label>Notes / Remarks</label><textarea id="tsf-notes" placeholder="Topics to revise, evaluator feedback..."></textarea></div><button class="btn" id="tsf-save" style="margin-top:14px;width:100%;">Save Entry</button>`);
     document.getElementById('tsf-x').onclick=closeUiModal;
+    const typeSel=document.getElementById('tsf-type');
+    if(typeSel)typeSel.onchange=()=>{const w=document.getElementById('tsf-type-custom-wrap');if(w)w.style.display=typeSel.value==='__custom'?'':'none';};
     if(phase==='prelims'){
       const live=()=>{const c=+(document.getElementById('tsf-c').value||0),w=+(document.getElementById('tsf-w').value||0),total=paper==='GS'?100:80;const sc=paper==='GS'?tsGSScore({correct:c,wrong:w}):tsCSATScore({correct:c});const acc=c+w>0?Math.round(c/(c+w)*100):0,u=total-c-w;const lv=document.getElementById('tsf-live');if(lv&&(c||w)){let ex='';if(paper==='GS'){const gap=Math.round((sc-S.testSeries.cutoffs.gs)*10)/10;ex=`<span style="color:${gap>=0?'var(--green)':'var(--red)'};font-weight:700">vs Cutoff(${S.testSeries.cutoffs.gs}): ${gap>=0?'+':''}${gap}</span>`;}else{const q=sc>=S.testSeries.cutoffs.csat;ex=`<span style="color:${q?'var(--green)':'var(--red)'};font-weight:700">${q?'✓ Qualifies (≥66)':'✗ Below cutoff (66)'}</span>`;}lv.innerHTML=`<div class="ts-row" style="gap:12px;flex-wrap:wrap;font-size:13px;"><span>Score <b>${sc}</b></span><span>Acc <b>${acc}%</b></span><span>Unattempted <b>${u}</b></span>${ex}</div>`;}};
       ['tsf-c','tsf-w'].forEach(id=>{const e=document.getElementById(id);if(e)e.oninput=live;});
@@ -1643,15 +1658,76 @@
     document.getElementById('tsf-save').onclick=()=>{
       const gv=id=>{const e=document.getElementById(id);return e?e.value:null;};
       const gn=id=>{const v=+(gv(id)||0);return v||null;};
-      const entry={id:uid(),testNo:gn('tsf-no'),date:gv('tsf-date')||todayStr(),testType:gv('tsf-type')||'',code:gv('tsf-code')||'',airRank:gn('tsf-air'),notes:(gv('tsf-notes')||'').trim(),ts:Date.now()};
+      let tt=gv('tsf-type')||'';if(tt==='__custom')tt=(gv('tsf-type-custom')||'').trim();
+      const entry={id:uid(),testNo:gn('tsf-no'),date:gv('tsf-date')||todayStr(),testType:tt,code:gv('tsf-code')||'',airRank:gn('tsf-air'),notes:(gv('tsf-notes')||'').trim(),ts:Date.now()};
+      if(showSyl)entry.syllabus=(gv('tsf-syl')||'').trim();
       if(phase==='prelims'){entry.correct=+(gv('tsf-c')||0);entry.wrong=+(gv('tsf-w')||0);}
       else if(phase==='mains'&&paper==='Essay'){entry.e1topic=gv('tsf-e1t')||'';entry.e1type=gv('tsf-e1type')||'';entry.e1self=gn('tsf-e1s');entry.e1eval=gn('tsf-e1e');entry.e2topic=gv('tsf-e2t')||'';entry.e2type=gv('tsf-e2type')||'';entry.e2self=gn('tsf-e2s');entry.e2eval=gn('tsf-e2e');}
-      else{entry.score=gn('tsf-score');entry.evalScore=gn('tsf-eval');if(phase==='mains'){entry.introR=gn('tsf-intro');entry.structR=gn('tsf-struct');entry.contR=gn('tsf-cont');entry.conclR=gn('tsf-concl');}}
+      else{entry.score=gn('tsf-score');entry.evalScore=gn('tsf-eval');entry.introR=gn('tsf-intro');entry.structR=gn('tsf-struct');entry.contR=gn('tsf-cont');entry.conclR=gn('tsf-concl');}
       S.testSeries[phase][paper].tests.push(entry);persist();closeUiModal();renderTests();toast('Test logged ✓');
     };
   }
 
+  /* ===================== UPCOMING TESTS ===================== */
+  function renderUpcoming(){
+    const el=document.getElementById('v-upcoming');if(!el)return;
+    if(!S.testSeries)S.testSeries=blankTestSeries();
+    if(!Array.isArray(S.testSeries.upcoming))S.testSeries.upcoming=[];
+    const ph=TS_PHASES.find(p=>p.k===curTestPhase)||TS_PHASES[0];
+    if(!ph.papers.includes(curTestPaper))curTestPaper=ph.papers[0];
+    const today=todayStr();
+    const all=S.testSeries.upcoming.filter(u=>u.phase===curTestPhase&&u.paper===curTestPaper).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+    const upcoming=all.filter(u=>(u.date||'')>=today),past=all.filter(u=>(u.date||'')<today);
+    const next=upcoming[0];
+    el.innerHTML=`
+      <div class="section-head"><div><h2>Upcoming Tests</h2><p>Schedule tests ahead — Prelims · Mains · Sociology</p></div></div>
+      <div class="ts-phase-row">${TS_PHASES.map(p=>`<button class="ts-phase-btn${p.k===curTestPhase?' on':''}" data-phase="${p.k}">${p.l}</button>`).join('')}</div>
+      <div class="ts-paper-row">${ph.papers.map(p=>`<button class="ts-paper-btn${p===curTestPaper?' on':''}" data-paper="${p}">${TS_TAB[p]||p}</button>`).join('')}</div>
+      <div class="ts-body">
+        ${next?`<div class="up-next"><div class="up-next-lbl">Next test in</div><div class="up-next-days">${daysUntil(next.date)}</div><div class="up-next-meta">${next.testNo?'Test '+next.testNo+' · ':''}${esc(TS_LABELS[next.paper]||next.paper)} · ${fmtDate(next.date)}</div></div>`:''}
+        <div class="ts-act-row"><button class="btn sm" id="up-add-btn">+ Schedule Test</button><span class="ts-cnt">${upcoming.length} upcoming${past.length?' · '+past.length+' passed':''}</span></div>
+        ${upcoming.length?`<div class="ts-list">${upcoming.map(u=>upCardHtml(u,false)).join('')}</div>`:`<div class="ts-empty">No tests scheduled for ${TS_LABELS[curTestPaper]||curTestPaper}. Tap <b>+ Schedule Test</b> to add one — or log the dates from your brochure.</div>`}
+        ${past.length?`<div class="set-h" style="margin-top:20px;">Passed dates</div><div class="ts-list">${past.map(u=>upCardHtml(u,true)).join('')}</div>`:''}
+      </div>`;
+    el.querySelectorAll('.ts-phase-btn').forEach(b=>b.onclick=()=>{curTestPhase=b.dataset.phase;curTestPaper=TS_PHASES.find(p=>p.k===curTestPhase).papers[0];renderUpcoming();});
+    el.querySelectorAll('.ts-paper-btn').forEach(b=>b.onclick=()=>{curTestPaper=b.dataset.paper;renderUpcoming();});
+    const ab=document.getElementById('up-add-btn');if(ab)ab.onclick=()=>upcomingAddForm(curTestPhase,curTestPaper);
+    el.querySelectorAll('.up-log-btn').forEach(b=>b.onclick=()=>{const u=S.testSeries.upcoming.find(x=>x.id===b.dataset.id);if(u){curTestPhase=u.phase;curTestPaper=u.paper;goToTests(u.phase,u.paper);setTimeout(()=>tsAddForm(u.phase,u.paper),60);}});
+    el.querySelectorAll('.up-del-btn').forEach(b=>b.onclick=()=>{S.testSeries.upcoming=S.testSeries.upcoming.filter(x=>x.id!==b.dataset.id);persist();renderUpcoming();});
+  }
 
+  function daysUntil(date){if(!date)return'—';const d=Math.round((new Date(date+'T00:00:00')-new Date(todayStr()+'T00:00:00'))/86400000);return d===0?'Today':d===1?'1 day':d+' days';}
+
+  function upCardHtml(u,isPast){
+    return`<div class="ts-card${isPast?' ts-card-past':''}"><div class="ts-card-head"><div class="ts-card-left"><span class="ts-no">Test ${u.testNo||'—'}</span>${u.code?`<span class="ts-code">[${esc(u.code)}]</span>`:''} ${u.testType?`<span class="ts-type">${esc(u.testType)}</span>`:''}</div><div class="ts-card-right"><span class="ts-date">${u.date?fmtDateShort(u.date):''}</span><button class="del up-del-btn" data-id="${u.id}">×</button></div></div>${!isPast?`<div class="ts-row"><span class="up-countdown">${daysUntil(u.date)}</span><button class="btn ghost sm up-log-btn" data-id="${u.id}" style="margin-left:auto;">Log result →</button></div>`:`<div class="ts-row"><button class="btn ghost sm up-log-btn" data-id="${u.id}" style="margin-left:auto;">Log result →</button></div>`}${u.syllabus?`<div class="ts-syl"><span class="ts-syl-tag">Syllabus</span> ${esc(u.syllabus)}</div>`:''}${u.notes?`<div class="ts-notes">${esc(u.notes)}</div>`:''}</div>`;
+  }
+
+  function upcomingAddForm(phase,paper){
+    if(!S.testSeries)S.testSeries=blankTestSeries();
+    if(!Array.isArray(S.testSeries.upcoming))S.testSeries.upcoming=[];
+    const label=TS_LABELS[paper]||paper;
+    const types=phase==='prelims'?['Fundamental','Applied','Full Length']:phase==='sociology'?['Fundamental','Advanced','Full Length']:['Fundamental','Advanced Sectional','Full Length'];
+    openUiModal(`<button class="icon-btn modal-close" id="upf-x">✕</button><h3>Schedule Test — ${esc(label)}</h3>
+      <div class="grid g-2">
+        <div class="field"><label>Test #</label><input type="number" id="upf-no" min="1" placeholder="e.g. 1"></div>
+        <div class="field"><label>Date</label><input type="date" id="upf-date" value="${todayStr()}"></div>
+        <div class="field"><label>Test Type</label><select id="upf-type"><option value="">— Select —</option>${types.map(t=>`<option>${t}</option>`).join('')}<option value="__custom">+ Custom…</option></select></div>
+        <div class="field"><label>Test Code</label><input type="text" id="upf-code" placeholder="e.g. 5613"></div>
+      </div>
+      <div class="field" id="upf-type-custom-wrap" style="display:none;margin-top:2px;"><label>Custom test type</label><input type="text" id="upf-type-custom" placeholder="e.g. Revision Test / Mini Test"></div>
+      <div class="field" style="margin-top:2px;"><label>Syllabus / Topics to cover</label><textarea id="upf-syl" placeholder="What to prepare for this test..."></textarea></div>
+      <div class="field" style="margin-top:2px;"><label>Notes / Remarks</label><textarea id="upf-notes" placeholder="Goal, target score, prep plan..."></textarea></div>
+      <button class="btn" id="upf-save" style="margin-top:14px;width:100%;">Schedule Test</button>`);
+    document.getElementById('upf-x').onclick=closeUiModal;
+    const ts=document.getElementById('upf-type');if(ts)ts.onchange=()=>{const w=document.getElementById('upf-type-custom-wrap');if(w)w.style.display=ts.value==='__custom'?'':'none';};
+    document.getElementById('upf-save').onclick=()=>{
+      const gv=id=>{const e=document.getElementById(id);return e?e.value:null;};
+      let tt=gv('upf-type')||'';if(tt==='__custom')tt=(gv('upf-type-custom')||'').trim();
+      const date=gv('upf-date');if(!date){document.getElementById('upf-date').focus();return;}
+      S.testSeries.upcoming.push({id:uid(),phase,paper,testNo:+(gv('upf-no')||0)||null,date,testType:tt,code:gv('upf-code')||'',syllabus:(gv('upf-syl')||'').trim(),notes:(gv('upf-notes')||'').trim(),ts:Date.now()});
+      persist();closeUiModal();renderUpcoming();toast('Test scheduled ✓');
+    };
+  }
 
   /* ===================== SYLLABUS ===================== */
   function renderSyllabus(){
