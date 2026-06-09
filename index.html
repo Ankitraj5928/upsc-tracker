@@ -94,6 +94,7 @@
   .date-nav{display:flex;align-items:center;gap:10px;}
   .date-nav .arrow{border:1px solid var(--line);background:var(--card);border-radius:10px;width:38px;height:38px;font-size:18px;color:var(--ink-soft);display:grid;place-items:center;}
   .date-nav .arrow:hover{color:var(--ink);border-color:var(--ink-soft);}
+  .date-nav input[type=date],.date-nav input[type=month]{height:38px;padding:0 10px;}
 
   .task-row{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line-soft);}
   .task-row:last-child{border-bottom:none;}
@@ -1481,7 +1482,7 @@
     const done=tasks.filter(x=>x.done).length, tot=tasks.length, pct=tot?Math.round(done/tot*100):0;
     let label, isCur, nav;
     if(isW){ const s=key,e=addDays(key,6); label=`${fmtDateShort(s)} – ${fmtDateShort(e)}, ${new Date(e+'T00:00:00').getFullYear()}`; isCur=key===weekStart(todayStr()); nav=`<input type="date" class="p-date" value="${key}" style="width:auto;">`; }
-    else { label=new Date(key+'-01T00:00:00').toLocaleDateString(undefined,{month:'long',year:'numeric'}); isCur=key===todayStr().slice(0,7); nav=`<input type="month" class="p-month" value="${key}" style="width:auto;">`; }
+    else { label=new Date(key+'-01T00:00:00').toLocaleDateString(undefined,{month:'long',year:'numeric'}); isCur=key===todayStr().slice(0,7); nav=`<input type="month" class="p-month" value="${key}" style="width:auto;max-width:160px;">`; }
     el.innerHTML=`
       <div class="section-head"><div><h2>${isW?'Weekly':'Monthly'} Targets</h2><p>${label}${isCur?(isW?' · This week':' · This month'):''}</p></div>
         <div class="date-nav"><button class="arrow p-prev">‹</button>${nav}<button class="arrow p-next">›</button></div></div>
@@ -1684,7 +1685,7 @@
       <div class="ts-phase-row">${TS_PHASES.map(p=>`<button class="ts-phase-btn${p.k===curTestPhase?' on':''}" data-phase="${p.k}">${p.l}</button>`).join('')}</div>
       <div class="ts-paper-row">${ph.papers.map(p=>`<button class="ts-paper-btn${p===curTestPaper?' on':''}" data-paper="${p}">${TS_TAB[p]||p}</button>`).join('')}</div>
       <div class="ts-body">
-        ${next?`<div class="up-next"><div class="up-next-lbl">Next test in</div><div class="up-next-days">${daysUntil(next.date)}</div><div class="up-next-meta">${next.testNo?'Test '+next.testNo+' · ':''}${esc(TS_LABELS[next.paper]||next.paper)} · ${fmtDate(next.date)}</div></div>`:''}
+        ${next?`<div class="up-next"><div class="up-next-lbl">Next test in</div><div class="up-next-days">${daysUntilLabel(next.date)}</div><div class="up-next-meta">${next.testNo?'Test '+next.testNo+' · ':''}${esc(TS_LABELS[next.paper]||next.paper)} · ${fmtDate(next.date)}</div></div>`:''}
         <div class="ts-act-row"><button class="btn sm" id="up-add-btn">+ Schedule Test</button><span class="ts-cnt">${upcoming.length} upcoming${past.length?' · '+past.length+' passed':''}</span></div>
         ${upcoming.length?`<div class="ts-list">${upcoming.map(u=>upCardHtml(u,false)).join('')}</div>`:`<div class="ts-empty">No tests scheduled for ${TS_LABELS[curTestPaper]||curTestPaper}. Tap <b>+ Schedule Test</b> to add one — or log the dates from your brochure.</div>`}
         ${past.length?`<div class="set-h" style="margin-top:20px;">Passed dates</div><div class="ts-list">${past.map(u=>upCardHtml(u,true)).join('')}</div>`:''}
@@ -1696,10 +1697,10 @@
     el.querySelectorAll('.up-del-btn').forEach(b=>b.onclick=()=>{S.testSeries.upcoming=S.testSeries.upcoming.filter(x=>x.id!==b.dataset.id);persist();renderUpcoming();});
   }
 
-  function daysUntil(date){if(!date)return'—';const d=Math.round((new Date(date+'T00:00:00')-new Date(todayStr()+'T00:00:00'))/86400000);return d===0?'Today':d===1?'1 day':d+' days';}
+  function daysUntilLabel(date){if(!date)return'—';const d=Math.round((new Date(date+'T00:00:00')-new Date(todayStr()+'T00:00:00'))/86400000);if(d<0)return Math.abs(d)+(Math.abs(d)===1?' day ago':' days ago');return d===0?'Today':d===1?'1 day':d+' days';}
 
   function upCardHtml(u,isPast){
-    return`<div class="ts-card${isPast?' ts-card-past':''}"><div class="ts-card-head"><div class="ts-card-left"><span class="ts-no">Test ${u.testNo||'—'}</span>${u.code?`<span class="ts-code">[${esc(u.code)}]</span>`:''} ${u.testType?`<span class="ts-type">${esc(u.testType)}</span>`:''}</div><div class="ts-card-right"><span class="ts-date">${u.date?fmtDateShort(u.date):''}</span><button class="del up-del-btn" data-id="${u.id}">×</button></div></div>${!isPast?`<div class="ts-row"><span class="up-countdown">${daysUntil(u.date)}</span><button class="btn ghost sm up-log-btn" data-id="${u.id}" style="margin-left:auto;">Log result →</button></div>`:`<div class="ts-row"><button class="btn ghost sm up-log-btn" data-id="${u.id}" style="margin-left:auto;">Log result →</button></div>`}${u.syllabus?`<div class="ts-syl"><span class="ts-syl-tag">Syllabus</span> ${esc(u.syllabus)}</div>`:''}${u.notes?`<div class="ts-notes">${esc(u.notes)}</div>`:''}</div>`;
+    return`<div class="ts-card${isPast?' ts-card-past':''}"><div class="ts-card-head"><div class="ts-card-left"><span class="ts-no">Test ${u.testNo||'—'}</span>${u.code?`<span class="ts-code">[${esc(u.code)}]</span>`:''} ${u.testType?`<span class="ts-type">${esc(u.testType)}</span>`:''}</div><div class="ts-card-right"><span class="ts-date">${u.date?fmtDateShort(u.date):''}</span><button class="del up-del-btn" data-id="${u.id}">×</button></div></div>${!isPast?`<div class="ts-row"><span class="up-countdown">${daysUntilLabel(u.date)}</span><button class="btn ghost sm up-log-btn" data-id="${u.id}" style="margin-left:auto;">Log result →</button></div>`:`<div class="ts-row"><button class="btn ghost sm up-log-btn" data-id="${u.id}" style="margin-left:auto;">Log result →</button></div>`}${u.syllabus?`<div class="ts-syl"><span class="ts-syl-tag">Syllabus</span> ${esc(u.syllabus)}</div>`:''}${u.notes?`<div class="ts-notes">${esc(u.notes)}</div>`:''}</div>`;
   }
 
   function upcomingAddForm(phase,paper){
