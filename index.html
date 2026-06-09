@@ -132,6 +132,50 @@
   .series-card{margin-bottom:16px;}
   .series-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
   .series-head .name{font-family:'Fraunces',serif;font-size:19px;font-weight:600;}
+
+  /* ── Test Series tab ── */
+  .ts-phase-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .ts-phase-btn{padding:9px 16px;border-radius:20px;font-size:13.5px;font-weight:700;border:2px solid var(--line);background:var(--card-2);color:var(--ink-soft);cursor:pointer;transition:all .15s;}
+  .ts-phase-btn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .ts-paper-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none;}
+  .ts-paper-row::-webkit-scrollbar{display:none;}
+  .ts-paper-btn{padding:6px 14px;border-radius:16px;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:var(--card-2);color:var(--ink-soft);cursor:pointer;white-space:nowrap;transition:all .15s;}
+  .ts-paper-btn.on{background:var(--accent);color:#fff;border-color:var(--accent);opacity:.9;}
+  .ts-body{margin-top:4px;}
+  .ts-empty{padding:24px 16px;text-align:center;color:var(--ink-soft);font-size:14px;line-height:1.6;background:var(--card-2);border-radius:12px;border:1px dashed var(--line);}
+  .ts-act-row{display:flex;align-items:center;gap:10px;margin:0 0 14px;}
+  .ts-cnt{font-size:13px;color:var(--ink-soft);}
+  .ts-list{display:flex;flex-direction:column;gap:10px;}
+  .ts-card{background:var(--card-2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;}
+  .ts-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .ts-card-left{display:flex;align-items:center;flex-wrap:wrap;gap:5px;}
+  .ts-card-right{display:flex;align-items:center;gap:8px;}
+  .ts-no{font-weight:700;font-size:14px;color:var(--ink);}
+  .ts-code{font-size:11.5px;color:var(--ink-faint);background:var(--line-soft);padding:1px 6px;border-radius:5px;}
+  .ts-type{font-size:11px;background:var(--line-soft);padding:2px 7px;border-radius:6px;color:var(--ink-soft);}
+  .ts-date{font-size:12px;color:var(--ink-soft);}
+  .ts-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:2px;}
+  .ts-sc{font-family:'Fraunces',serif;font-size:22px;font-weight:700;line-height:1;}
+  .ts-sc small{font-family:inherit;font-size:13px;color:var(--ink-soft);font-weight:400;}
+  .ts-chip{font-size:12px;background:var(--line-soft);padding:2px 8px;border-radius:8px;color:var(--ink-soft);}
+  .ts-air{background:var(--accent-soft,#fdf0ea);color:var(--accent);}
+  .ts-ratings{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;}
+  .ts-notes{font-size:12.5px;color:var(--ink-soft);margin-top:8px;padding-top:8px;border-top:1px solid var(--line-soft);line-height:1.5;}
+  .ts-essays{display:flex;flex-direction:column;gap:4px;margin-top:6px;}
+  .ts-ess{font-size:12.5px;color:var(--ink-soft);}
+  .ts-ess b{color:var(--ink);font-weight:700;}
+  .ts-live{margin:10px 0 2px;padding:10px 12px;background:var(--green-soft,#f0faf4);border-radius:10px;border:1px solid var(--line);}
+
+  /* ── Test Suite dashboard widget ── */
+  .ts-wg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+  @media(min-width:480px){.ts-wg-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));}}
+  .ts-wg-cell{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:9px 8px;text-align:center;cursor:pointer;transition:border-color .15s;}
+  .ts-wg-cell:hover{border-color:var(--accent);}
+  .ts-wg-lbl{font-size:10.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;}
+  .ts-wg-val{font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--ink);line-height:1.2;margin:3px 0;}
+  .ts-wg-sub{font-size:10px;color:var(--ink-faint);}
+  .ts-det-cell{cursor:pointer;transition:background .12s;}
+  .ts-det-cell:hover{background:var(--line-soft)!important;border-radius:10px;}
   table{width:100%;border-collapse:collapse;margin-top:10px;}
   th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-weight:600;}
   td{padding:10px;border-bottom:1px solid var(--line-soft);font-size:13.5px;vertical-align:top;}
@@ -510,10 +554,11 @@
     {id:'syllabus',  label:'Syllabus progress',   size:'half'},
     {id:'quick',     label:'Quick actions',       size:'full'},
     {id:'deadlines', label:'Deadlines',           size:'full'},
-    {id:'latest',    label:'Latest test',         size:'full'}
+    {id:'latest',    label:'Latest test',         size:'full'},
+    {id:'testsuite', label:'Test Series (all)',    size:'full'}
   ];
   const DASH_WIDGET_IDS=DASH_WIDGETS.map(w=>w.id);
-  const DEFAULT_DASH_WIDGETS=['focus','top3','countdown','today','streak','quick','deadlines','latest'];
+  const DEFAULT_DASH_WIDGETS=['focus','top3','countdown','today','streak','quick','deadlines','testsuite','latest'];
 
   /* Catalogue of custom tab types available from the "+ Tab" picker */
   const TAB_TYPES=[
@@ -600,7 +645,17 @@
   function hexToRgb(h){ h=(h||'').replace('#',''); if(h.length===3)h=h.split('').map(c=>c+c).join(''); const n=parseInt(h||'0',16); return [(n>>16)&255,(n>>8)&255,n&255]; }
   function rgbToHex(r){ return '#'+r.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join(''); }
   function mix(a,b,t){ const A=hexToRgb(a),B=hexToRgb(b); return rgbToHex([A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t]); }
-  function blankState(){ return { settings:{tasks:DEFAULT_TASKS.slice()}, appName:'Track your day', theme:{mode:'light',accent:'terracotta'}, days:{}, weekly:[], monthly:[], weeks:{}, months:{}, series:[], syllabus:[], syllabusInit:false, resTypes:DEFAULT_RES_TYPES.slice(), resourceTabs:defaultResourceTabs(), customTabs:[], hiddenBuiltins:[], exams:[], dashWidgets:DEFAULT_DASH_WIDGETS.slice(), hoursGoal:0, dashStickies:[], dashSizes:{}, photoNotes:[], customQuotes:[], customCOI:[], weeklyReviews:{} }; }
+  function blankTestSeries(){const mk=()=>({tests:[]});return{prelims:{GS:mk(),CSAT:mk()},mains:{GS1:mk(),GS2:mk(),GS3:mk(),GS4:mk(),Essay:mk()},sociology:{Paper1:mk(),Paper2:mk()},cutoffs:{gs:110,csat:66}};}
+  function normTestSeries(o){if(!o||typeof o!=='object')return blankTestSeries();const mk=s=>({tests:Array.isArray(s&&s.tests)?s.tests.map(t=>({...t})):[]});const p=o.prelims||{},m=o.mains||{},so=o.sociology||{},c=o.cutoffs||{};return{prelims:{GS:mk(p.GS),CSAT:mk(p.CSAT)},mains:{GS1:mk(m.GS1),GS2:mk(m.GS2),GS3:mk(m.GS3),GS4:mk(m.GS4),Essay:mk(m.Essay)},sociology:{Paper1:mk(so.Paper1),Paper2:mk(so.Paper2)},cutoffs:{gs:+c.gs||110,csat:+c.csat||66}};}
+  const TS_PHASES=[{k:'prelims',l:'Prelims 📝',papers:['GS','CSAT']},{k:'mains',l:'Mains ✍️',papers:['GS1','GS2','GS3','GS4','Essay']},{k:'sociology',l:'Sociology 📚',papers:['Paper1','Paper2']}];
+  const TS_LABELS={GS:'GS (100 Qs)',CSAT:'CSAT (80 Qs)',GS1:'GS Paper I',GS2:'GS Paper II',GS3:'GS Paper III',GS4:'GS Paper IV',Essay:'Essay',Paper1:'Sociology — Paper I',Paper2:'Sociology — Paper II'};
+  const TS_SHORT={GS:'Pre. GS',CSAT:'CSAT',GS1:'GS–I',GS2:'GS–II',GS3:'GS–III',GS4:'GS–IV',Essay:'Essay',Paper1:'Socio. I',Paper2:'Socio. II'};
+  const TS_TAB={GS:'GS',CSAT:'CSAT',GS1:'GS I',GS2:'GS II',GS3:'GS III',GS4:'GS IV',Essay:'Essay',Paper1:'Paper I',Paper2:'Paper II'};
+  function tsGSScore(t){return Math.round(((+(t.correct||0))*2-(+(t.wrong||0))*(2/3))*10)/10;}
+  function tsGSAcc(t){const a=(+(t.correct||0))+(+(t.wrong||0));return a?Math.round((+(t.correct||0))/a*100):0;}
+  function tsCSATScore(t){return Math.round((+(t.correct||0))*2.5*10)/10;}
+  function tsSc(phase,paper,t){if(phase==='prelims'&&paper==='GS')return tsGSScore(t);if(phase==='prelims'&&paper==='CSAT')return tsCSATScore(t);if(phase==='mains'&&paper==='Essay')return (+(t.e1self||0))+(+(t.e2self||0));return +(t.score||0);}
+  function blankState(){ return { settings:{tasks:DEFAULT_TASKS.slice()}, appName:'Track your day', theme:{mode:'light',accent:'terracotta'}, days:{}, weekly:[], monthly:[], weeks:{}, months:{}, series:[], syllabus:[], syllabusInit:false, resTypes:DEFAULT_RES_TYPES.slice(), resourceTabs:defaultResourceTabs(), customTabs:[], hiddenBuiltins:[], exams:[], dashWidgets:DEFAULT_DASH_WIDGETS.slice(), hoursGoal:0, dashStickies:[], dashSizes:{}, photoNotes:[], customQuotes:[], customCOI:[], weeklyReviews:{}, testSeries:blankTestSeries() }; }
   function normLog(l){ const out={}; if(l&&typeof l==='object'){ Object.keys(l).forEach(k=>{ const v=+l[k]; if(/^\d{4}-\d{2}-\d{2}$/.test(k)&&v>0) out[k]=Math.round(v); }); } return out; }
   function normCustomTabs(ct){
     if(!Array.isArray(ct)) return [];
@@ -635,9 +690,11 @@
     if(Array.isArray(o.monthly)) o.monthly.forEach(x=>{ const ref=x.deadline||x.created||today; const k=ref.slice(0,7); (months[k]=months[k]||{tasks:[]}).tasks.push({id:x.id||uid(),text:x.title||'',done:!!x.done}); });
     return {days,weeks,months};
   }
-  function normalize(o){ o=o||{}; const mig=migrateState(o); const th=(o.theme&&typeof o.theme==='object')?o.theme:{}; return { settings:(o.settings&&Array.isArray(o.settings.tasks)&&o.settings.tasks.length)?o.settings:{tasks:DEFAULT_TASKS.slice()}, appName:(typeof o.appName==='string'&&o.appName.trim())?o.appName.trim().slice(0,40):'Track your day', theme:{mode:th.mode==='dark'?'dark':'light', accent:THEMES[th.accent]?th.accent:'terracotta'}, days:mig.days, weekly:[], monthly:[], weeks:mig.weeks, months:mig.months, series:o.series||[], syllabus:o.syllabus||[], syllabusInit:!!o.syllabusInit, resTypes:(Array.isArray(o.resTypes)&&o.resTypes.length)?o.resTypes.slice():DEFAULT_RES_TYPES.slice(), resourceTabs:normResourceTabs(o.resourceTabs), customTabs:normCustomTabs(o.customTabs), hiddenBuiltins:Array.isArray(o.hiddenBuiltins)?o.hiddenBuiltins.filter(x=>BUILTIN_IDS.indexOf(x)>=0):[], exams:Array.isArray(o.exams)?o.exams.map(e=>({id:e.id||uid(),name:e.name||'Exam',date:e.date||''})).filter(e=>e.date):[], dashWidgets:Array.isArray(o.dashWidgets)?o.dashWidgets.filter(x=>DASH_WIDGET_IDS.indexOf(x)>=0):DEFAULT_DASH_WIDGETS.slice(), hoursGoal:+o.hoursGoal||0, dashStickies:Array.isArray(o.dashStickies)?o.dashStickies.map(s=>({id:s.id||uid(),text:s.text||'',color:['yellow','green','pink','blue'].indexOf(s.color)>=0?s.color:'yellow'})):[], dashSizes:(o.dashSizes&&typeof o.dashSizes==='object')?Object.keys(o.dashSizes).reduce((m,k)=>{ if(DASH_WIDGET_IDS.indexOf(k)>=0&&(o.dashSizes[k]==='half'||o.dashSizes[k]==='full')) m[k]=o.dashSizes[k]; return m; },{}):{}, photoNotes:Array.isArray(o.photoNotes)?o.photoNotes.map(p=>({id:p.id||uid(),img:p.img||'',text:p.text||'',ts:p.ts||Date.now()})).filter(p=>p.img):[], customQuotes:Array.isArray(o.customQuotes)?o.customQuotes.map(q=>String(q||'').trim()).filter(Boolean):[], customCOI:Array.isArray(o.customCOI)?o.customCOI.map(q=>String(q||'').trim()).filter(Boolean):[], weeklyReviews:(o.weeklyReviews&&typeof o.weeklyReviews==='object')?Object.keys(o.weeklyReviews).reduce((m,k)=>{ const v=o.weeklyReviews[k]; if(typeof v==='string'&&v.trim()) m[k]=v; return m; },{}):{} }; }
+  function normalize(o){ o=o||{}; const mig=migrateState(o); const th=(o.theme&&typeof o.theme==='object')?o.theme:{}; return { settings:(o.settings&&Array.isArray(o.settings.tasks)&&o.settings.tasks.length)?o.settings:{tasks:DEFAULT_TASKS.slice()}, appName:(typeof o.appName==='string'&&o.appName.trim())?o.appName.trim().slice(0,40):'Track your day', theme:{mode:th.mode==='dark'?'dark':'light', accent:THEMES[th.accent]?th.accent:'terracotta'}, days:mig.days, weekly:[], monthly:[], weeks:mig.weeks, months:mig.months, series:o.series||[], syllabus:o.syllabus||[], syllabusInit:!!o.syllabusInit, resTypes:(Array.isArray(o.resTypes)&&o.resTypes.length)?o.resTypes.slice():DEFAULT_RES_TYPES.slice(), resourceTabs:normResourceTabs(o.resourceTabs), customTabs:normCustomTabs(o.customTabs), hiddenBuiltins:Array.isArray(o.hiddenBuiltins)?o.hiddenBuiltins.filter(x=>BUILTIN_IDS.indexOf(x)>=0):[], exams:Array.isArray(o.exams)?o.exams.map(e=>({id:e.id||uid(),name:e.name||'Exam',date:e.date||''})).filter(e=>e.date):[], dashWidgets:Array.isArray(o.dashWidgets)?o.dashWidgets.filter(x=>DASH_WIDGET_IDS.indexOf(x)>=0):DEFAULT_DASH_WIDGETS.slice(), hoursGoal:+o.hoursGoal||0, dashStickies:Array.isArray(o.dashStickies)?o.dashStickies.map(s=>({id:s.id||uid(),text:s.text||'',color:['yellow','green','pink','blue'].indexOf(s.color)>=0?s.color:'yellow'})):[], dashSizes:(o.dashSizes&&typeof o.dashSizes==='object')?Object.keys(o.dashSizes).reduce((m,k)=>{ if(DASH_WIDGET_IDS.indexOf(k)>=0&&(o.dashSizes[k]==='half'||o.dashSizes[k]==='full')) m[k]=o.dashSizes[k]; return m; },{}):{}, photoNotes:Array.isArray(o.photoNotes)?o.photoNotes.map(p=>({id:p.id||uid(),img:p.img||'',text:p.text||'',ts:p.ts||Date.now()})).filter(p=>p.img):[], customQuotes:Array.isArray(o.customQuotes)?o.customQuotes.map(q=>String(q||'').trim()).filter(Boolean):[], customCOI:Array.isArray(o.customCOI)?o.customCOI.map(q=>String(q||'').trim()).filter(Boolean):[], weeklyReviews:(o.weeklyReviews&&typeof o.weeklyReviews==='object')?Object.keys(o.weeklyReviews).reduce((m,k)=>{ const v=o.weeklyReviews[k]; if(typeof v==='string'&&v.trim()) m[k]=v; return m; },{}):{}, testSeries:normTestSeries(o.testSeries) }; }
   let S=blankState();
   let curDate=todayStr();
+  let curTestPhase='prelims'; let curTestPaper='GS';
+  function goToTests(phase,paper){if(phase)curTestPhase=phase;if(paper)curTestPaper=paper;activeTab='tests';menuOpen=false;render();}
   let curWeek=weekStart(todayStr());
   let curMonth=todayStr().slice(0,7);
   let activeTab='dashboard';
@@ -1163,7 +1220,53 @@
   function wDeadlines(){ const t=todayStr(); const dls=collectDeadlines(); const showD=dls.slice(0,5); const moreD=dls.length-showD.length; return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Deadlines</h2></div>${dls.length?`<span class="pill ${dls.some(d=>d.overdue)?'red':'gold'}">${dls.length} open</span>`:''}</div>${showD.length?showD.map(d=>`<div class="dl-row" data-go="${d.srcTab}" data-period="${esc(d.period||'')}"><div class="dl-meta"><div class="dl-title">${esc(d.title)}</div><div class="dl-src">${esc(d.src)}</div></div><span class="pill ${d.overdue?'red':(d.deadline===t?'gold':'')}">${d.overdue?'Overdue':(daysUntil(d.deadline)===0?'Today':'in '+daysUntil(d.deadline)+'d')}</span></div>`).join('')+(moreD>0?`<div class="dl-more">+${moreD} more</div>`:''):`<div class="mini-note">Nothing due — add deadlines to your weekly, monthly or target tabs.</div>`}</div>`; }
   function wLatest(){ let latest=null; S.series.forEach(s=>s.tests.forEach(t2=>{ if(!latest||(t2.date||'')>(latest.date||'')) latest={...t2,series:s.name}; })); return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Latest Test</h2></div>${latest?`<span class="pill ${(latest.scored/latest.total*100)>=50?'green':(latest.scored/latest.total*100)>=35?'gold':'red'}">${Math.round(latest.scored/latest.total*100)}%</span>`:''}</div>${latest?`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;"><div style="min-width:0;"><div style="font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(latest.topic||latest.series)}</div><div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">${esc(latest.series)} · ${fmtDate(latest.date)}</div></div><div class="score-tag" style="font-size:26px;color:var(--accent);white-space:nowrap;">${latest.scored}<span style="color:var(--ink-faint);font-size:15px;">/${latest.total}</span></div></div><button class="btn ghost sm" id="dash-tests" style="margin-top:14px;">View test series</button>`:`<div class="mini-note">No tests logged yet. <button class="linkbtn" id="dash-tests2">Log your first →</button></div>`}</div>`; }
 
-  const WBUILD={focus:wFocus,top3:wTop3,hoursgoal:wHoursGoal,stickies:wStickies,quote:wQuote,coi:wCOI,weekreview:wWeekReview,momentum:wMomentum,garden:wGarden,photonotes:wPhotoNotes,countdown:wCountdown,today:wToday,streak:wStreak,calendar:wCalendar,hours7:wHours7,syllabus:wSyllabus,quick:wQuick,deadlines:wDeadlines,latest:wLatest};
+  function wTestSuite(){
+    if(!S.testSeries)S.testSeries=blankTestSeries();
+    const ts=S.testSeries;
+    const sects=[{ph:'prelims',pa:'GS'},{ph:'prelims',pa:'CSAT'},{ph:'mains',pa:'GS1'},{ph:'mains',pa:'GS2'},{ph:'mains',pa:'GS3'},{ph:'mains',pa:'GS4'},{ph:'mains',pa:'Essay'},{ph:'sociology',pa:'Paper1'},{ph:'sociology',pa:'Paper2'}];
+    const cells=sects.map(s=>{
+      const tests=(ts[s.ph]&&ts[s.ph][s.pa]&&ts[s.ph][s.pa].tests)||[];
+      let val='—',sub=tests.length?tests.length+(tests.length===1?' test':' tests'):'No tests';
+      if(tests.length){
+        const avgs=tests.map(t=>tsSc(s.ph,s.pa,t));
+        const avg=avgs.reduce((a,b)=>a+b,0)/avgs.length;
+        const maxSc=s.ph==='prelims'?200:250;
+        val=Math.round(avg*10)/10+'/'+maxSc;
+        if(s.ph==='prelims'&&s.pa==='CSAT'){const p=tests.filter(t=>tsCSATScore(t)>=ts.cutoffs.csat).length;sub=p+'/'+tests.length+' passed';}
+      }
+      return`<div class="ts-wg-cell" data-ph="${s.ph}" data-pa="${s.pa}"><div class="ts-wg-lbl">${TS_SHORT[s.pa]}</div><div class="ts-wg-val">${val}</div><div class="ts-wg-sub">${sub}</div></div>`;
+    }).join('');
+    const total=['prelims','mains','sociology'].reduce((a,ph)=>a+Object.keys(ts[ph]||{}).reduce((b,pa)=>b+((ts[ph][pa]&&ts[ph][pa].tests)?ts[ph][pa].tests.length:0),0),0);
+    return`<div class="card"><div class="section-head" style="margin-bottom:10px;"><div><h2 style="font-size:18px;">Test Series</h2><p style="margin:0;font-size:12px;">Prelims · Mains · Sociology</p></div><span class="pill gold">${total} logged</span></div><div class="ts-wg-grid">${cells}</div><button class="btn ghost sm" id="ts-wg-open" style="margin-top:12px;width:100%;">Full overview →</button></div>`;
+  }
+
+  function openTestSuiteDetail(){
+    if(!S.testSeries)S.testSeries=blankTestSeries();
+    const ts=S.testSeries;
+    let body='';
+    TS_PHASES.forEach(ph=>{
+      body+=`<h4 class="hd-h" style="margin:14px 0 8px;">${ph.l}</h4><div class="hd-grid">`;
+      ph.papers.forEach(pa=>{
+        const tests=(ts[ph.k]&&ts[ph.k][pa]&&ts[ph.k][pa].tests)||[];
+        let avgStr='—',detail=tests.length?tests.length+' test'+(tests.length===1?'':'s'):'No tests';
+        if(tests.length){
+          const sc=tests.map(t=>tsSc(ph.k,pa,t));
+          const avg=Math.round(sc.reduce((a,b)=>a+b,0)/sc.length*10)/10;
+          const maxSc=ph.k==='prelims'?200:250;
+          avgStr=avg+'/'+maxSc;
+          if(ph.k==='prelims'&&pa==='CSAT'){const p=tests.filter(t=>tsCSATScore(t)>=ts.cutoffs.csat).length;detail+=` (${p} passed)`;}
+          if(sc.length>=2){const last=sc[sc.length-1],prev=sc[sc.length-2];avgStr+=(last>prev?' ↑':last<prev?' ↓':' →');}
+        }
+        body+=`<div class="hd-stat ts-det-cell" data-ph="${ph.k}" data-pa="${pa}"><span>${TS_LABELS[pa]||pa}</span><b>${avgStr}</b><span style="font-size:11px;color:var(--ink-soft)">${detail}</span></div>`;
+      });
+      body+='</div>';
+    });
+    openUiModal(`<button class="icon-btn modal-close" id="tsd-x">✕</button><h3>Test Series — Overview</h3><p style="color:var(--ink-soft);font-size:13px;margin:0 0 4px;">Tap any section to open its tracker.</p>${body}`);
+    document.getElementById('tsd-x').onclick=closeUiModal;
+    document.querySelectorAll('#ui-modal .ts-det-cell').forEach(c=>{c.style.cursor='pointer';c.onclick=()=>{closeUiModal();goToTests(c.dataset.ph,c.dataset.pa);};});
+  }
+
+  const WBUILD={focus:wFocus,top3:wTop3,hoursgoal:wHoursGoal,stickies:wStickies,quote:wQuote,coi:wCOI,weekreview:wWeekReview,momentum:wMomentum,garden:wGarden,photonotes:wPhotoNotes,countdown:wCountdown,today:wToday,streak:wStreak,calendar:wCalendar,hours7:wHours7,syllabus:wSyllabus,quick:wQuick,deadlines:wDeadlines,latest:wLatest,testsuite:wTestSuite};
 
   function quotePool(){ return QUOTES.concat(S.customQuotes||[]); }
   function coiPool(){ return COI_ARTICLES.concat(S.customCOI||[]); }
@@ -1312,6 +1415,8 @@
     const gc=document.getElementById('garden-card'); if(gc) gc.onclick=openGardenDetail;
     const dt1=document.getElementById('dash-tests'); if(dt1) dt1.onclick=()=>goAny('tests');
     const dt2=document.getElementById('dash-tests2'); if(dt2) dt2.onclick=()=>goAny('tests');
+    const two=document.getElementById('ts-wg-open'); if(two) two.onclick=openTestSuiteDetail;
+    document.querySelectorAll('#v-dashboard .ts-wg-cell').forEach(c=>c.onclick=()=>goToTests(c.dataset.ph,c.dataset.pa));
   }
   function progressBlock(label,done,tot){ const pct=tot?Math.round(done/tot*100):0; return `<div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="font-weight:600;">${label}</span><span style="color:var(--ink-soft);">${done}/${tot} · ${pct}%</span></div><div class="progress"><span style="width:${pct}%"></span></div></div>`; }
 
@@ -1393,35 +1498,160 @@
   function renderWeekly(){ renderPeriod('weekly'); }
   function renderMonthly(){ renderPeriod('monthly'); }
 
-  /* ===================== TEST SERIES ===================== */
+  /* ===================== TEST SERIES (Prelims / Mains / Sociology) ===================== */
   function renderTests(){
-    const el=document.getElementById('v-tests'); if(!el)return;
+    const el=document.getElementById('v-tests');if(!el)return;
+    if(!S.testSeries)S.testSeries=blankTestSeries();
+    const ph=TS_PHASES.find(p=>p.k===curTestPhase)||TS_PHASES[0];
+    if(!ph.papers.includes(curTestPaper))curTestPaper=ph.papers[0];
+    const tests=(S.testSeries[curTestPhase]&&S.testSeries[curTestPhase][curTestPaper]&&S.testSeries[curTestPhase][curTestPaper].tests)||[];
     el.innerHTML=`
-      <div class="section-head"><div><h2>Test Series</h2><p>Add a series, then log each test with syllabus, marks and remarks.</p></div></div>
-      <div class="card" style="margin-bottom:18px;"><div class="add-bar"><div class="field" style="flex:2;"><label>New test series</label><input type="text" id="series-name" placeholder="e.g. Vision IAS Prelims 2026 / Self-made mocks"></div><button class="btn" id="series-add">Add series</button></div></div>
-      <div id="series-wrap">${S.series.length?S.series.map(renderSeriesCard).join(''):'<div class="card"><div class="empty">No test series yet. Add one above — you can create as many as you like.</div></div>'}</div>`;
-    document.getElementById('series-add').onclick=()=>{ const n=document.getElementById('series-name'); const name=n.value.trim(); if(!name){n.focus();return;} S.series.unshift({id:uid(),name,tests:[]}); persist(); renderTests(); toast('Series added'); };
-    S.series.forEach(s=>{ const root=document.querySelector(`[data-series="${s.id}"]`); if(!root)return;
-      root.querySelector('.series-del').onclick=()=>{ uiConfirm({ title:'Delete series?', message:`Delete series "${s.name}" and all its tests?`, okText:'Delete', danger:true, onOk:()=>{ S.series=S.series.filter(x=>x.id!==s.id); persist(); renderTests(); } }); };
-      root.querySelector('.test-add').onclick=()=>{ const g=id=>root.querySelector('#'+id+'-'+s.id); const topic=g('t-topic').value.trim(); const scored=parseFloat(g('t-scored').value); const total=parseFloat(g('t-total').value); if(!topic){g('t-topic').focus();return;} if(isNaN(total)||total<=0){g('t-total').focus();return;} s.tests.push({id:uid(),topic,scored:isNaN(scored)?0:scored,total,date:g('t-date').value||todayStr(),remarks:g('t-rem').value.trim()}); persist(); renderTests(); toast('Test logged'); };
-      root.querySelectorAll('.test-del').forEach(b=>{ b.onclick=()=>{ s.tests=s.tests.filter(x=>x.id!==b.dataset.id); persist(); renderTests(); }; });
-    });
+      <div class="section-head"><div><h2>Test Series</h2><p>Prelims · Mains · Sociology Optional</p></div></div>
+      <div class="ts-phase-row">${TS_PHASES.map(p=>`<button class="ts-phase-btn${p.k===curTestPhase?' on':''}" data-phase="${p.k}">${p.l}</button>`).join('')}</div>
+      <div class="ts-paper-row">${ph.papers.map(p=>`<button class="ts-paper-btn${p===curTestPaper?' on':''}" data-paper="${p}">${TS_TAB[p]||p}</button>`).join('')}</div>
+      <div class="ts-body">
+        ${tsSummaryHtml(curTestPhase,curTestPaper,tests)}
+        <div class="ts-act-row">
+          <button class="btn sm" id="ts-add-btn">+ Log Test</button>
+          <span class="ts-cnt">${tests.length} test${tests.length!==1?'s':''} logged</span>
+          ${curTestPhase==='prelims'&&curTestPaper==='GS'?`<button class="linkbtn" id="ts-cutoff-btn" style="margin-left:auto;font-size:12px;">⚙ Cutoff: ${S.testSeries.cutoffs.gs}</button>`:''}
+        </div>
+        ${tsListHtml(curTestPhase,curTestPaper,tests)}
+      </div>`;
+    el.querySelectorAll('.ts-phase-btn').forEach(b=>b.onclick=()=>{curTestPhase=b.dataset.phase;curTestPaper=TS_PHASES.find(p=>p.k===curTestPhase).papers[0];renderTests();});
+    el.querySelectorAll('.ts-paper-btn').forEach(b=>b.onclick=()=>{curTestPaper=b.dataset.paper;renderTests();});
+    const ab=document.getElementById('ts-add-btn');if(ab)ab.onclick=()=>tsAddForm(curTestPhase,curTestPaper);
+    const cb=document.getElementById('ts-cutoff-btn');if(cb)cb.onclick=()=>uiPrompt({title:'Set GS Cutoff Target',label:'Expected cutoff (/200)',placeholder:'110',value:String(S.testSeries.cutoffs.gs),okText:'Save',onOk:v=>{const n=+v;if(n>0&&n<=200){S.testSeries.cutoffs.gs=n;persist();renderTests();toast('Cutoff updated');}}});
+    el.querySelectorAll('.ts-del-btn').forEach(b=>b.onclick=()=>uiConfirm({title:'Remove this entry?',message:'This cannot be undone.',okText:'Delete',danger:true,onOk:()=>{S.testSeries[curTestPhase][curTestPaper].tests.splice(+b.dataset.idx,1);persist();renderTests();}}));
   }
-  function renderSeriesCard(s){
-    const valid=s.tests.filter(t=>t.total>0);
-    const avg=valid.length?(valid.reduce((a,b)=>a+(b.scored/b.total),0)/valid.length*100):null;
-    return `<div class="card series-card" data-series="${s.id}">
-      <div class="series-head"><div class="name">${esc(s.name)}</div><div class="row-flex">${avg!=null?`<span class="pill ${avg>=50?'green':avg>=35?'gold':'red'}">Avg ${avg.toFixed(1)}%</span>`:''}<span class="pill">${s.tests.length} test${s.tests.length===1?'':'s'}</span><button class="del series-del">×</button></div></div>
-      ${s.tests.length?`<table><thead><tr><th>Test / Syllabus</th><th>Date</th><th style="text-align:center;">Marks</th><th style="text-align:center;">%</th><th>Remarks</th><th></th></tr></thead><tbody>${s.tests.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(t=>{const p=t.total>0?(t.scored/t.total*100):0;const col=p>=50?'var(--green)':p>=35?'var(--gold)':'var(--red)';return `<tr><td style="font-weight:600;">${esc(t.topic)}</td><td style="color:var(--ink-soft);white-space:nowrap;">${fmtDateShort(t.date)}</td><td style="text-align:center;" class="score-tag">${t.scored}<span style="color:var(--ink-faint);">/${t.total}</span></td><td style="text-align:center;color:${col};font-weight:700;">${p.toFixed(0)}%</td><td style="color:var(--ink-soft);">${esc(t.remarks)||'—'}</td><td><button class="del test-del" data-id="${t.id}">×</button></td></tr>`;}).join('')}</tbody></table>`:'<div class="empty" style="padding:14px;">No tests logged in this series yet.</div>'}
-      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft);"><div class="add-bar">
-        <div class="field" style="flex:2;min-width:160px;"><label>Test / Syllabus topic</label><input type="text" id="t-topic-${s.id}" placeholder="e.g. Polity – Test 3"></div>
-        <div class="field" style="min-width:90px;"><label>Scored</label><input type="number" id="t-scored-${s.id}" step="0.5" placeholder="0"></div>
-        <div class="field" style="min-width:90px;"><label>Out of</label><input type="number" id="t-total-${s.id}" step="0.5" placeholder="200"></div>
-        <div class="field"><label>Date</label><input type="date" id="t-date-${s.id}"></div>
-        <div class="field" style="flex:2;min-width:160px;"><label>Remarks</label><input type="text" id="t-rem-${s.id}" placeholder="weak areas, time mgmt..."></div>
-        <button class="btn sm test-add">+ Log test</button>
-      </div></div></div>`;
+
+  function tsSummaryHtml(phase,paper,tests){
+    if(!tests.length)return`<div class="ts-empty">No tests logged yet — tap <b>+ Log Test</b> to add your first ${TS_LABELS[paper]||paper} entry.</div>`;
+    const ts=S.testSeries; const stats=[];
+    if(phase==='prelims'&&paper==='GS'){
+      const scores=tests.map(t=>tsGSScore(t));
+      const avg=Math.round(scores.reduce((a,b)=>a+b,0)/scores.length*10)/10;
+      const best=Math.max(...scores);
+      const accs=tests.filter(t=>+(t.correct||0)+(+(t.wrong||0))>0).map(t=>tsGSAcc(t));
+      const avgAcc=accs.length?Math.round(accs.reduce((a,b)=>a+b,0)/accs.length):0;
+      const airs=tests.filter(t=>t.airRank);
+      const gap=Math.round((avg-ts.cutoffs.gs)*10)/10;
+      stats.push({l:'Avg Score',v:avg+' /200'},{l:'Best Score',v:best+' /200'},{l:'Avg Accuracy',v:avgAcc+'%'},{l:'vs Cutoff',v:(gap>=0?'+':'')+gap,c:gap>=0?'var(--green)':'var(--red)'},{l:'Best AIR',v:airs.length?Math.min(...airs.map(t=>t.airRank)):'—'});
+    }else if(phase==='prelims'&&paper==='CSAT'){
+      const scores=tests.map(t=>tsCSATScore(t));
+      const avg=Math.round(scores.reduce((a,b)=>a+b,0)/scores.length*10)/10;
+      const passes=tests.filter(t=>tsCSATScore(t)>=ts.cutoffs.csat).length;
+      const airs=tests.filter(t=>t.airRank);
+      stats.push({l:'Avg Score',v:avg+' /200'},{l:'Pass Rate',v:Math.round(passes/tests.length*100)+'%'},{l:'Passed',v:passes+' / '+tests.length},{l:'Best',v:Math.max(...scores)+' /200'},{l:'Best AIR',v:airs.length?Math.min(...airs.map(t=>t.airRank)):'—'});
+    }else if(phase==='mains'&&paper==='Essay'){
+      const selfs=tests.map(t=>(+(t.e1self||0))+(+(t.e2self||0)));
+      const evals=tests.filter(t=>t.e1eval||t.e2eval).map(t=>(+(t.e1eval||0))+(+(t.e2eval||0)));
+      const avg=Math.round(selfs.reduce((a,b)=>a+b,0)/selfs.length);
+      const avgE=evals.length?Math.round(evals.reduce((a,b)=>a+b,0)/evals.length):null;
+      const airs=tests.filter(t=>t.airRank);
+      stats.push({l:'Avg Self',v:avg+' /250'},{l:'Best',v:Math.max(...selfs)+' /250'},{l:'Avg Eval',v:avgE!=null?avgE+' /250':'—'},{l:'Tests',v:tests.length},{l:'Best AIR',v:airs.length?Math.min(...airs.map(t=>t.airRank)):'—'});
+    }else{
+      const scores=tests.filter(t=>t.score).map(t=>+(t.score||0));
+      const evals=tests.filter(t=>t.evalScore).map(t=>+(t.evalScore||0));
+      const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;
+      const avgE=evals.length?Math.round(evals.reduce((a,b)=>a+b,0)/evals.length):0;
+      const pct=avg?Math.round(avg/250*100):0;
+      const airs=tests.filter(t=>t.airRank);
+      stats.push({l:'Avg Score',v:avg+' /250'},{l:'Avg %',v:pct+'%'},{l:'Best',v:scores.length?Math.max(...scores)+' /250':'—'},{l:'Avg Eval',v:avgE?avgE+' /250':'—'},{l:'Best AIR',v:airs.length?Math.min(...airs.map(t=>t.airRank)):'—'});
+    }
+    return`<div class="hd-grid" style="margin-bottom:16px;">${stats.map(s=>`<div class="hd-stat"><span>${s.l}</span><b style="${s.c?'color:'+s.c:''}">${s.v}</b></div>`).join('')}</div>`;
   }
+
+  function tsListHtml(phase,paper,tests){
+    if(!tests.length)return'';
+    const ts=S.testSeries;
+    const sorted=tests.map((t,i)=>({t,i})).sort((a,b)=>(b.t.date||'').localeCompare(a.t.date||''));
+    return`<div class="ts-list">${sorted.map(({t,i})=>{
+      let body='',foot='';
+      if(phase==='prelims'&&paper==='GS'){
+        const sc=tsGSScore(t),acc=tsGSAcc(t),u=100-(+(t.correct||0))-(+(t.wrong||0));
+        const col=sc>=ts.cutoffs.gs?'var(--green)':sc>=ts.cutoffs.gs-20?'var(--gold)':'var(--red)';
+        body=`<div class="ts-row"><span class="ts-sc" style="color:${col}">${sc}<small>/200</small></span><span class="ts-chip">${t.correct}✓</span><span class="ts-chip">${t.wrong||0}✗</span><span class="ts-chip">${u}–</span><span class="ts-chip">Acc ${acc}%</span>${t.airRank?`<span class="ts-chip ts-air">AIR ${t.airRank}</span>`:''}</div>`;
+      }else if(phase==='prelims'&&paper==='CSAT'){
+        const sc=tsCSATScore(t),q=sc>=ts.cutoffs.csat,acc=tsGSAcc(t);
+        body=`<div class="ts-row"><span class="ts-sc" style="color:${q?'var(--green)':'var(--red)'}">${sc}<small>/200</small></span><span class="pill ${q?'green':'red'}" style="font-size:11px;">${q?'✓ Qualified':'✗ Not qualified'}</span><span class="ts-chip">Acc ${acc}%</span>${t.airRank?`<span class="ts-chip ts-air">AIR ${t.airRank}</span>`:''}</div>`;
+      }else if(phase==='mains'&&paper==='Essay'){
+        const tot=(+(t.e1self||0))+(+(t.e2self||0)),etot=(+(t.e1eval||0))+(+(t.e2eval||0));
+        body=`<div class="ts-row"><span class="ts-sc">${tot||'—'}<small>/250</small></span>${etot?`<span class="ts-chip">Eval ${etot}/250</span>`:''} ${t.airRank?`<span class="ts-chip ts-air">AIR ${t.airRank}</span>`:''}</div>`;
+        foot=(t.e1topic||t.e2topic)?`<div class="ts-essays">${t.e1topic?`<div class="ts-ess"><b>E1</b> ${esc(t.e1topic.slice(0,55))} <span class="ts-chip">${t.e1self||'?'}/125${t.e1eval?' · Eval '+t.e1eval:''}</span></div>`:''} ${t.e2topic?`<div class="ts-ess"><b>E2</b> ${esc(t.e2topic.slice(0,55))} <span class="ts-chip">${t.e2self||'?'}/125${t.e2eval?' · Eval '+t.e2eval:''}</span></div>`:''}</div>`:'';
+      }else{
+        const sc=+(t.score||0),pct=sc?Math.round(sc/250*100):0;
+        const col=pct>=50?'var(--green)':pct>=40?'var(--gold)':'var(--red)';
+        body=`<div class="ts-row"><span class="ts-sc" style="color:${col}">${sc||'—'}<small>/250</small></span>${pct?`<span class="ts-chip">${pct}%</span>`:''} ${t.evalScore?`<span class="ts-chip">Eval ${t.evalScore}/250</span>`:''} ${t.airRank?`<span class="ts-chip ts-air">AIR ${t.airRank}</span>`:''}</div>`;
+        if(t.introR||t.structR||t.contR||t.conclR){const r=(v,l)=>v?`<span class="ts-chip">${l} ${'★'.repeat(Math.min(5,v))}${'☆'.repeat(5-Math.min(5,v))}</span>`:'';foot=`<div class="ts-ratings">${r(t.introR,'Intro')}${r(t.structR,'Struct')}${r(t.contR,'Content')}${r(t.conclR,'Concl')}</div>`;}
+      }
+      return`<div class="ts-card"><div class="ts-card-head"><div class="ts-card-left"><span class="ts-no">Test ${t.testNo||'—'}</span>${t.code?`<span class="ts-code">[${esc(t.code)}]</span>`:''} ${t.testType?`<span class="ts-type">${esc(t.testType)}</span>`:''}</div><div class="ts-card-right"><span class="ts-date">${t.date?fmtDateShort(t.date):''}</span><button class="del ts-del-btn" data-idx="${i}">×</button></div></div>${body}${foot}${t.notes?`<div class="ts-notes">${esc(t.notes)}</div>`:''}</div>`;
+    }).join('')}</div>`;
+  }
+
+  function tsAddForm(phase,paper){
+    if(!S.testSeries)S.testSeries=blankTestSeries();
+    const label=TS_LABELS[paper]||paper;
+    const types=phase==='prelims'?['Fundamental','Applied','Full Length']:phase==='sociology'?['Fundamental','Advanced','Full Length']:['Fundamental','Advanced Sectional','Full Length'];
+    const baseF=`<div class="grid g-2">
+      <div class="field"><label>Test #</label><input type="number" id="tsf-no" min="1" placeholder="e.g. 1"></div>
+      <div class="field"><label>Date</label><input type="date" id="tsf-date" value="${todayStr()}"></div>
+      <div class="field"><label>Test Type</label><select id="tsf-type"><option value="">— Select —</option>${types.map(t=>`<option>${t}</option>`).join('')}</select></div>
+      <div class="field"><label>Test Code</label><input type="text" id="tsf-code" placeholder="e.g. 5613"></div>
+      <div class="field"><label>AIR Rank (optional)</label><input type="number" id="tsf-air" min="1" placeholder="—"></div>
+    </div>`;
+    let specF='';
+    if(phase==='prelims'){
+      const total=paper==='GS'?100:80;
+      specF=`<div class="set-h" style="margin-top:12px;">Score</div><div class="grid g-2">
+        <div class="field"><label>Correct (max ${total})</label><input type="number" id="tsf-c" min="0" max="${total}" placeholder="0"></div>
+        <div class="field"><label>Wrong</label><input type="number" id="tsf-w" min="0" max="${total}" placeholder="0"></div>
+      </div><div id="tsf-live" class="ts-live"></div>`;
+    }else if(phase==='mains'&&paper==='Essay'){
+      specF=`<div class="set-h" style="margin-top:12px;">Essay 1</div>
+        <div class="field"><label>Topic</label><input type="text" id="tsf-e1t" placeholder="Essay title or keywords"></div>
+        <div class="grid g-2">
+          <div class="field"><label>Type</label><select id="tsf-e1type"><option>Social</option><option>Political</option><option>Philosophical</option><option>Abstract</option><option>Environment</option><option>Ethics</option></select></div>
+          <div class="field"><label>Self marks (/125)</label><input type="number" id="tsf-e1s" min="0" max="125"></div>
+          <div class="field"><label>Evaluator marks</label><input type="number" id="tsf-e1e" min="0" max="125" placeholder="optional"></div>
+        </div>
+        <div class="set-h" style="margin-top:4px;">Essay 2</div>
+        <div class="field"><label>Topic</label><input type="text" id="tsf-e2t" placeholder="Essay title or keywords"></div>
+        <div class="grid g-2">
+          <div class="field"><label>Type</label><select id="tsf-e2type"><option>Social</option><option>Political</option><option>Philosophical</option><option>Abstract</option><option>Environment</option><option>Ethics</option></select></div>
+          <div class="field"><label>Self marks (/125)</label><input type="number" id="tsf-e2s" min="0" max="125"></div>
+          <div class="field"><label>Evaluator marks</label><input type="number" id="tsf-e2e" min="0" max="125" placeholder="optional"></div>
+        </div>`;
+    }else{
+      specF=`<div class="set-h" style="margin-top:12px;">Marks</div><div class="grid g-2">
+        <div class="field"><label>Score /250</label><input type="number" id="tsf-score" min="0" max="250"></div>
+        <div class="field"><label>Evaluator score /250</label><input type="number" id="tsf-eval" min="0" max="250" placeholder="optional"></div>
+      </div>
+      ${phase==='mains'?`<div class="set-h" style="margin-top:4px;">Self Assessment (1–5)</div><div class="grid g-2">
+        <div class="field"><label>Intro quality</label><input type="number" id="tsf-intro" min="1" max="5" placeholder="1–5"></div>
+        <div class="field"><label>Structure</label><input type="number" id="tsf-struct" min="1" max="5" placeholder="1–5"></div>
+        <div class="field"><label>Content</label><input type="number" id="tsf-cont" min="1" max="5" placeholder="1–5"></div>
+        <div class="field"><label>Conclusion</label><input type="number" id="tsf-concl" min="1" max="5" placeholder="1–5"></div>
+      </div>`:''}`;
+    }
+    openUiModal(`<button class="icon-btn modal-close" id="tsf-x">✕</button><h3>Log Test — ${esc(label)}</h3>${baseF}${specF}<div class="field" style="margin-top:10px;"><label>Notes / Remarks</label><textarea id="tsf-notes" placeholder="Topics to revise, evaluator feedback..."></textarea></div><button class="btn" id="tsf-save" style="margin-top:14px;width:100%;">Save Entry</button>`);
+    document.getElementById('tsf-x').onclick=closeUiModal;
+    if(phase==='prelims'){
+      const live=()=>{const c=+(document.getElementById('tsf-c').value||0),w=+(document.getElementById('tsf-w').value||0),total=paper==='GS'?100:80;const sc=paper==='GS'?tsGSScore({correct:c,wrong:w}):tsCSATScore({correct:c});const acc=c+w>0?Math.round(c/(c+w)*100):0,u=total-c-w;const lv=document.getElementById('tsf-live');if(lv&&(c||w)){let ex='';if(paper==='GS'){const gap=Math.round((sc-S.testSeries.cutoffs.gs)*10)/10;ex=`<span style="color:${gap>=0?'var(--green)':'var(--red)'};font-weight:700">vs Cutoff(${S.testSeries.cutoffs.gs}): ${gap>=0?'+':''}${gap}</span>`;}else{const q=sc>=S.testSeries.cutoffs.csat;ex=`<span style="color:${q?'var(--green)':'var(--red)'};font-weight:700">${q?'✓ Qualifies (≥66)':'✗ Below cutoff (66)'}</span>`;}lv.innerHTML=`<div class="ts-row" style="gap:12px;flex-wrap:wrap;font-size:13px;"><span>Score <b>${sc}</b></span><span>Acc <b>${acc}%</b></span><span>Unattempted <b>${u}</b></span>${ex}</div>`;}};
+      ['tsf-c','tsf-w'].forEach(id=>{const e=document.getElementById(id);if(e)e.oninput=live;});
+    }
+    document.getElementById('tsf-save').onclick=()=>{
+      const gv=id=>{const e=document.getElementById(id);return e?e.value:null;};
+      const gn=id=>{const v=+(gv(id)||0);return v||null;};
+      const entry={id:uid(),testNo:gn('tsf-no'),date:gv('tsf-date')||todayStr(),testType:gv('tsf-type')||'',code:gv('tsf-code')||'',airRank:gn('tsf-air'),notes:(gv('tsf-notes')||'').trim(),ts:Date.now()};
+      if(phase==='prelims'){entry.correct=+(gv('tsf-c')||0);entry.wrong=+(gv('tsf-w')||0);}
+      else if(phase==='mains'&&paper==='Essay'){entry.e1topic=gv('tsf-e1t')||'';entry.e1type=gv('tsf-e1type')||'';entry.e1self=gn('tsf-e1s');entry.e1eval=gn('tsf-e1e');entry.e2topic=gv('tsf-e2t')||'';entry.e2type=gv('tsf-e2type')||'';entry.e2self=gn('tsf-e2s');entry.e2eval=gn('tsf-e2e');}
+      else{entry.score=gn('tsf-score');entry.evalScore=gn('tsf-eval');if(phase==='mains'){entry.introR=gn('tsf-intro');entry.structR=gn('tsf-struct');entry.contR=gn('tsf-cont');entry.conclR=gn('tsf-concl');}}
+      S.testSeries[phase][paper].tests.push(entry);persist();closeUiModal();renderTests();toast('Test logged ✓');
+    };
+  }
+
+
 
   /* ===================== SYLLABUS ===================== */
   function renderSyllabus(){
