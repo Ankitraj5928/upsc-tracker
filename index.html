@@ -195,6 +195,11 @@
   .add-bar .field{flex:1;min-width:140px;}
   .row-flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
   .mini-note{font-size:12px;color:var(--ink-soft);background:var(--card-2);border:1px dashed var(--line);border-radius:10px;padding:10px 12px;}
+  .res-search-wrap{display:flex;align-items:center;gap:8px;background:var(--card-2);border:1px solid var(--line);border-radius:11px;padding:2px 10px;margin-bottom:14px;transition:.15s;}
+  .res-search-wrap:focus-within{border-color:var(--accent);background:var(--surface-hi);box-shadow:0 0 0 3px rgba(180,82,31,.10);}
+  .res-search-ic{font-size:14px;opacity:.55;flex:0 0 auto;}
+  .res-search{flex:1;border:none!important;background:transparent!important;padding:9px 0!important;font-size:14px;min-width:0;}
+  .res-search:focus{box-shadow:none!important;outline:none;}
 
   .modal-bg{position:fixed;inset:0;background:rgba(35,32,26,.45);backdrop-filter:blur(3px);display:none;place-items:center;z-index:80;padding:18px;}
   .modal-bg.show{display:grid;}
@@ -710,6 +715,7 @@
   let curMonth=todayStr().slice(0,7);
   let activeTab='dashboard';
   let resFilter='All';
+  let resSearch='';
   let menuOpen=false, menuManage=false;
   let dashEdit=false, dashCustomize=false, dashArrange=false;
   let quoteCur=-1;
@@ -986,7 +992,7 @@
   }
   function wireMenu(){
     const d=document.getElementById('drawer'); if(!d) return;
-    d.querySelectorAll('.m-item[data-go]').forEach(b=>b.onclick=()=>{ activeTab=b.dataset.go; resFilter='All'; menuOpen=false; menuManage=false; render(); });
+    d.querySelectorAll('.m-item[data-go]').forEach(b=>b.onclick=()=>{ activeTab=b.dataset.go; resFilter='All'; resSearch=''; menuOpen=false; menuManage=false; render(); });
     const add=document.getElementById('m-add'); if(add) add.onclick=()=>{ menuOpen=false; render(); openTabPicker(); };
     const cz=document.getElementById('m-settings'); if(cz) cz.onclick=()=>{ menuOpen=false; menuManage=false; render(); openSettings(); };
     const man=document.getElementById('m-manage'); if(man) man.onclick=()=>{ menuManage=!menuManage; render(); };
@@ -1786,7 +1792,8 @@
     if(!tab){ activeTab='dashboard'; render(); return; }
     const items=tab.items;
     const typeSet=[]; S.resTypes.forEach(t=>{ if(typeSet.indexOf(t)<0) typeSet.push(t); }); items.forEach(it=>{ if(it.type&&typeSet.indexOf(it.type)<0) typeSet.push(it.type); });
-    const shown=items.filter(it=>resFilter==='All'||it.type===resFilter);
+    const term=resSearch.trim().toLowerCase();
+    const shown=items.filter(it=>(resFilter==='All'||it.type===resFilter)&&(!term||String(it.label||'').toLowerCase().includes(term)||String(it.url||'').toLowerCase().includes(term)||String(it.type||'').toLowerCase().includes(term)));
     const counts={}; typeSet.forEach(t=>counts[t]=items.filter(x=>x.type===t).length);
     el.innerHTML=`
       <div class="section-head">
@@ -1805,9 +1812,11 @@
         </div>
       </div>
       <div class="card">
+        <div class="res-search-wrap"><span class="res-search-ic">🔍</span><input type="text" id="res-search" class="res-search" placeholder="Search resources… (label, link or tag)" value="${esc(resSearch)}">${resSearch?'<button class="del" id="res-search-clear" title="Clear">×</button>':''}</div>
         <div class="row-flex" style="margin-bottom:14px;gap:8px;">
           ${['All',...typeSet].map(f=>`<button class="pill ${f===resFilter?(f==='All'?'gold':typeColor(f)||'gold'):''}" data-filter="${esc(f)}" style="cursor:pointer;">${esc(f)}${f!=='All'?` · ${counts[f]||0}`:` · ${items.length}`}</button>`).join('')}
         </div>
+        ${term?`<div class="mini-note" style="margin-bottom:12px;">${shown.length} result${shown.length!==1?'s':''} for “${esc(resSearch.trim())}”${resFilter!=='All'?' in '+esc(resFilter):''}</div>`:''}
         ${shown.length? shown.map(it=>`
           <div class="target-row" data-id="${it.id}">
             <span class="pill ${typeColor(it.type)}" style="min-width:74px;justify-content:center;">${esc(it.type)}</span>
@@ -1817,7 +1826,7 @@
             </div>
             <button class="del res-edit" title="Edit" style="color:var(--accent);font-size:14px;">✎</button>
             <button class="del res-del">×</button>
-          </div>`).join('') : `<div class="empty">No links here yet${resFilter!=='All'?' for '+esc(resFilter):''} — add one above.</div>`}
+          </div>`).join('') : `<div class="empty">${term?`No matches for “${esc(resSearch.trim())}”${resFilter!=='All'?' in '+esc(resFilter):''}.`:`No links here yet${resFilter!=='All'?' for '+esc(resFilter):''} — add one above.`}</div>`}
       </div>`;
 
     const typeSel=document.getElementById('res-type');
@@ -1835,6 +1844,9 @@
     document.getElementById('res-rename').onclick=()=>{ uiPrompt({ title:'Rename tab', label:'Tab name', value:tab.name, onOk:(n)=>{ const nm=(n||'').trim(); if(nm){ tab.name=nm; persist(); render(); } } }); };
     const delT=document.getElementById('res-deltab'); if(delT) delT.onclick=()=>{ uiConfirm({ title:'Delete tab?', message:`Delete the "${tab.name}" tab and all its links?`, okText:'Delete', danger:true, onOk:()=>{ S.resourceTabs=S.resourceTabs.filter(t=>t.id!==tab.id); activeTab='dashboard'; persist(); render(); } }); };
     el.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{ resFilter=b.dataset.filter; renderResource(); });
+    const sb=document.getElementById('res-search');
+    if(sb){ sb.oninput=()=>{ resSearch=sb.value; const pos=sb.selectionStart; renderResource(); const nb=document.getElementById('res-search'); if(nb){ nb.focus(); try{ nb.setSelectionRange(pos,pos); }catch(e){} } }; }
+    const sc2=document.getElementById('res-search-clear'); if(sc2) sc2.onclick=()=>{ resSearch=''; renderResource(); const nb=document.getElementById('res-search'); if(nb) nb.focus(); };
     el.querySelectorAll('.target-row').forEach(row=>{ const id=row.dataset.id; row.querySelector('.res-del').onclick=(e)=>{ e.preventDefault(); e.stopPropagation(); tab.items=tab.items.filter(x=>x.id!==id); persist(); renderResource(); };
       const re=row.querySelector('.res-edit'); if(re) re.onclick=(e)=>{ e.preventDefault(); e.stopPropagation(); const it=tab.items.find(x=>x.id===id); if(!it)return;
         openUiModal(`<button class="icon-btn modal-close" id="rle-x">✕</button><h3>Edit link</h3>
