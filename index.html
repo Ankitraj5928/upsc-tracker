@@ -665,7 +665,7 @@
   function tsGSAcc(t){const a=(+(t.correct||0))+(+(t.wrong||0));return a?Math.round((+(t.correct||0))/a*100):0;}
   function tsCSATScore(t){return Math.round((+(t.correct||0))*2.5*10)/10;}
   function tsSc(phase,paper,t){if(phase==='prelims'&&paper==='GS')return tsGSScore(t);if(phase==='prelims'&&paper==='CSAT')return tsCSATScore(t);if(phase==='mains'&&paper==='Essay')return (+(t.e1self||0))+(+(t.e2self||0));return +(t.score||0);}
-  function blankState(){ return { settings:{tasks:DEFAULT_TASKS.slice()}, appName:'Track your day', theme:{mode:'light',accent:'terracotta'}, days:{}, weekly:[], monthly:[], weeks:{}, months:{}, series:[], syllabus:[], syllabusInit:false, resTypes:DEFAULT_RES_TYPES.slice(), resourceTabs:defaultResourceTabs(), customTabs:[], hiddenBuiltins:[], exams:[], dashWidgets:DEFAULT_DASH_WIDGETS.slice(), hoursGoal:0, dashStickies:[], dashSizes:{}, photoNotes:[], customQuotes:[], customCOI:[], weeklyReviews:{}, testSeries:blankTestSeries() }; }
+  function blankState(){ return { settings:{tasks:DEFAULT_TASKS.slice()}, appName:'Track your day', theme:{mode:'light',accent:'terracotta'}, days:{}, weekly:[], monthly:[], weeks:{}, months:{}, series:[], syllabus:[], syllabusInit:false, resTypes:DEFAULT_RES_TYPES.slice(), resourceTabs:defaultResourceTabs(), customTabs:[], hiddenBuiltins:[], exams:[], dashWidgets:DEFAULT_DASH_WIDGETS.slice(), hoursGoal:0, dashStickies:[], dashSizes:{}, photoNotes:[], customQuotes:[], customCOI:[], weeklyReviews:{}, testSeries:blankTestSeries(), tabNames:{} }; }
   function normLog(l){ const out={}; if(l&&typeof l==='object'){ Object.keys(l).forEach(k=>{ const v=+l[k]; if(/^\d{4}-\d{2}-\d{2}$/.test(k)&&v>0) out[k]=Math.round(v); }); } return out; }
   function normCustomTabs(ct){
     if(!Array.isArray(ct)) return [];
@@ -700,11 +700,12 @@
     if(Array.isArray(o.monthly)) o.monthly.forEach(x=>{ const ref=x.deadline||x.created||today; const k=ref.slice(0,7); (months[k]=months[k]||{tasks:[]}).tasks.push({id:x.id||uid(),text:x.title||'',done:!!x.done}); });
     return {days,weeks,months};
   }
-  function normalize(o){ o=o||{}; const mig=migrateState(o); const th=(o.theme&&typeof o.theme==='object')?o.theme:{}; return { settings:(o.settings&&Array.isArray(o.settings.tasks)&&o.settings.tasks.length)?o.settings:{tasks:DEFAULT_TASKS.slice()}, appName:(typeof o.appName==='string'&&o.appName.trim())?o.appName.trim().slice(0,40):'Track your day', theme:{mode:th.mode==='dark'?'dark':'light', accent:THEMES[th.accent]?th.accent:'terracotta'}, days:mig.days, weekly:[], monthly:[], weeks:mig.weeks, months:mig.months, series:o.series||[], syllabus:o.syllabus||[], syllabusInit:!!o.syllabusInit, resTypes:(Array.isArray(o.resTypes)&&o.resTypes.length)?o.resTypes.slice():DEFAULT_RES_TYPES.slice(), resourceTabs:normResourceTabs(o.resourceTabs), customTabs:normCustomTabs(o.customTabs), hiddenBuiltins:Array.isArray(o.hiddenBuiltins)?o.hiddenBuiltins.filter(x=>BUILTIN_IDS.indexOf(x)>=0):[], exams:Array.isArray(o.exams)?o.exams.map(e=>({id:e.id||uid(),name:e.name||'Exam',date:e.date||''})).filter(e=>e.date):[], dashWidgets:Array.isArray(o.dashWidgets)?o.dashWidgets.filter(x=>DASH_WIDGET_IDS.indexOf(x)>=0):DEFAULT_DASH_WIDGETS.slice(), hoursGoal:+o.hoursGoal||0, dashStickies:Array.isArray(o.dashStickies)?o.dashStickies.map(s=>({id:s.id||uid(),text:s.text||'',color:['yellow','green','pink','blue'].indexOf(s.color)>=0?s.color:'yellow'})):[], dashSizes:(o.dashSizes&&typeof o.dashSizes==='object')?Object.keys(o.dashSizes).reduce((m,k)=>{ if(DASH_WIDGET_IDS.indexOf(k)>=0&&(o.dashSizes[k]==='half'||o.dashSizes[k]==='full')) m[k]=o.dashSizes[k]; return m; },{}):{}, photoNotes:Array.isArray(o.photoNotes)?o.photoNotes.map(p=>({id:p.id||uid(),img:p.img||'',text:p.text||'',ts:p.ts||Date.now()})).filter(p=>p.img):[], customQuotes:Array.isArray(o.customQuotes)?o.customQuotes.map(q=>String(q||'').trim()).filter(Boolean):[], customCOI:Array.isArray(o.customCOI)?o.customCOI.map(q=>String(q||'').trim()).filter(Boolean):[], weeklyReviews:(o.weeklyReviews&&typeof o.weeklyReviews==='object')?Object.keys(o.weeklyReviews).reduce((m,k)=>{ const v=o.weeklyReviews[k]; if(typeof v==='string'&&v.trim()) m[k]=v; return m; },{}):{}, testSeries:normTestSeries(o.testSeries) }; }
+  function normalize(o){ o=o||{}; const mig=migrateState(o); const th=(o.theme&&typeof o.theme==='object')?o.theme:{}; return { settings:(o.settings&&Array.isArray(o.settings.tasks)&&o.settings.tasks.length)?o.settings:{tasks:DEFAULT_TASKS.slice()}, appName:(typeof o.appName==='string'&&o.appName.trim())?o.appName.trim().slice(0,40):'Track your day', theme:{mode:th.mode==='dark'?'dark':'light', accent:THEMES[th.accent]?th.accent:'terracotta'}, days:mig.days, weekly:[], monthly:[], weeks:mig.weeks, months:mig.months, series:o.series||[], syllabus:o.syllabus||[], syllabusInit:!!o.syllabusInit, resTypes:(Array.isArray(o.resTypes)&&o.resTypes.length)?o.resTypes.slice():DEFAULT_RES_TYPES.slice(), resourceTabs:normResourceTabs(o.resourceTabs), customTabs:normCustomTabs(o.customTabs), hiddenBuiltins:Array.isArray(o.hiddenBuiltins)?o.hiddenBuiltins.filter(x=>BUILTIN_IDS.indexOf(x)>=0):[], exams:Array.isArray(o.exams)?o.exams.map(e=>({id:e.id||uid(),name:e.name||'Exam',date:e.date||''})).filter(e=>e.date):[], dashWidgets:Array.isArray(o.dashWidgets)?o.dashWidgets.filter(x=>DASH_WIDGET_IDS.indexOf(x)>=0):DEFAULT_DASH_WIDGETS.slice(), hoursGoal:+o.hoursGoal||0, dashStickies:Array.isArray(o.dashStickies)?o.dashStickies.map(s=>({id:s.id||uid(),text:s.text||'',color:['yellow','green','pink','blue'].indexOf(s.color)>=0?s.color:'yellow'})):[], dashSizes:(o.dashSizes&&typeof o.dashSizes==='object')?Object.keys(o.dashSizes).reduce((m,k)=>{ if(DASH_WIDGET_IDS.indexOf(k)>=0&&(o.dashSizes[k]==='half'||o.dashSizes[k]==='full')) m[k]=o.dashSizes[k]; return m; },{}):{}, photoNotes:Array.isArray(o.photoNotes)?o.photoNotes.map(p=>({id:p.id||uid(),img:p.img||'',text:p.text||'',ts:p.ts||Date.now()})).filter(p=>p.img):[], customQuotes:Array.isArray(o.customQuotes)?o.customQuotes.map(q=>String(q||'').trim()).filter(Boolean):[], customCOI:Array.isArray(o.customCOI)?o.customCOI.map(q=>String(q||'').trim()).filter(Boolean):[], weeklyReviews:(o.weeklyReviews&&typeof o.weeklyReviews==='object')?Object.keys(o.weeklyReviews).reduce((m,k)=>{ const v=o.weeklyReviews[k]; if(typeof v==='string'&&v.trim()) m[k]=v; return m; },{}):{}, testSeries:normTestSeries(o.testSeries), tabNames:(o.tabNames&&typeof o.tabNames==='object')?Object.keys(o.tabNames).reduce((m,k)=>{ if(BUILTIN_IDS.indexOf(k)>=0&&typeof o.tabNames[k]==='string'&&o.tabNames[k].trim()) m[k]=o.tabNames[k].trim().slice(0,30); return m; },{}):{} }; }
   let S=blankState();
   let curDate=todayStr();
   let curTestPhase='prelims'; let curTestPaper='GS';
   function goToTests(phase,paper){if(phase)curTestPhase=phase;if(paper)curTestPaper=paper;activeTab='tests';menuOpen=false;render();}
+  function builtinLabel(id){ const b=BUILTINS.find(x=>x.id===id); return (S.tabNames&&S.tabNames[id])||(b?b.label:id); }
   let curWeek=weekStart(todayStr());
   let curMonth=todayStr().slice(0,7);
   let activeTab='dashboard';
@@ -966,11 +967,12 @@
   function closeMenu(){ menuOpen=false; menuManage=false; render(); }
   function menuRow(tabId,icon,label,delKind,delId){
     const active=activeTab===tabId;
-    return `<div class="m-row ${active?'active':''}"><button class="m-item" data-go="${tabId}"><span class="m-ic">${icon}</span><span class="m-label">${esc(label)}</span></button>${menuManage?`<button class="m-del" data-delkind="${delKind}" data-delid="${esc(delId)}" title="Delete tab">×</button>`:''}</div>`;
+    const canRename=delKind==='builtin';
+    return `<div class="m-row ${active?'active':''}"><button class="m-item" data-go="${tabId}"><span class="m-ic">${icon}</span><span class="m-label">${esc(label)}</span></button>${menuManage&&canRename?`<button class="m-del" data-renkind="${delKind}" data-renid="${esc(delId)}" title="Rename tab" style="color:var(--accent);font-size:14px;">✎</button>`:''}${menuManage?`<button class="m-del" data-delkind="${delKind}" data-delid="${esc(delId)}" title="Delete tab">×</button>`:''}</div>`;
   }
   function menuHTML(){
     const rows=[];
-    BUILTINS.forEach(b=>{ if(S.hiddenBuiltins.indexOf(b.id)<0) rows.push(menuRow(b.id,b.icon,b.label,'builtin',b.id)); });
+    BUILTINS.forEach(b=>{ if(S.hiddenBuiltins.indexOf(b.id)<0) rows.push(menuRow(b.id,b.icon,builtinLabel(b.id),'builtin',b.id)); });
     S.resourceTabs.forEach(t=> rows.push(menuRow('res:'+t.id,'🔗',t.name,'res',t.id)) );
     S.customTabs.forEach(t=> rows.push(menuRow('custom:'+t.id,tabIcon(t.type),t.name,'custom',t.id)) );
     const hidden=BUILTINS.filter(b=>S.hiddenBuiltins.indexOf(b.id)>=0);
@@ -988,7 +990,8 @@
     const add=document.getElementById('m-add'); if(add) add.onclick=()=>{ menuOpen=false; render(); openTabPicker(); };
     const cz=document.getElementById('m-settings'); if(cz) cz.onclick=()=>{ menuOpen=false; menuManage=false; render(); openSettings(); };
     const man=document.getElementById('m-manage'); if(man) man.onclick=()=>{ menuManage=!menuManage; render(); };
-    d.querySelectorAll('.m-del').forEach(b=>b.onclick=()=>deleteTab(b.dataset.delkind,b.dataset.delid));
+    d.querySelectorAll('.m-del[data-delkind]').forEach(b=>b.onclick=()=>deleteTab(b.dataset.delkind,b.dataset.delid));
+    d.querySelectorAll('.m-del[data-renkind]').forEach(b=>b.onclick=()=>{ const id=b.dataset.renid; uiPrompt({ title:'Rename tab', label:'Tab name', value:builtinLabel(id), okText:'Save', onOk:(v)=>{ const nm=(v||'').trim(); if(!S.tabNames)S.tabNames={}; if(nm&&nm!==(BUILTINS.find(x=>x.id===id)||{}).label) S.tabNames[id]=nm.slice(0,30); else delete S.tabNames[id]; persist(); menuOpen=true; menuManage=true; render(); toast('Tab renamed'); } }); });
     d.querySelectorAll('.m-restore').forEach(b=>b.onclick=()=>{ S.hiddenBuiltins=S.hiddenBuiltins.filter(x=>x!==b.dataset.restore); persist(); render(); toast('Tab restored'); });
   }
   function deleteTab(kind,id){
@@ -1039,7 +1042,7 @@
     return `<div class="card countdown ${hero?'':'empty-cd'}">
         <div class="row-flex" style="justify-content:space-between;align-items:flex-start;"><div class="cd-label">${hero?'Exam Countdown':'Set your exam date'}</div><button class="cd-edit" id="dash-exedit">${dashEdit?'Done':(S.exams.length?'Edit':'')}</button></div>
         ${hero?`<div class="cd-main"><span class="cd-days">${hero.days}</span><span class="cd-unit">${hero.days===1?'day':'days'} to go</span></div><div class="cd-name">${esc(hero.name)} · ${fmtDate(hero.date)}</div>${others.length?`<div class="cd-others">${others.map(e=>`<span class="pill">${esc(e.name)} · ${e.days}d</span>`).join('')}</div>`:''}`:`<div class="cd-empty-text">Add Prelims / Mains dates to see a live countdown.</div>`}
-        ${(dashEdit||!S.exams.length)?`<div class="cd-editor"><div class="add-bar"><div class="field" style="flex:2;min-width:150px;"><label>Exam name</label><input type="text" id="ex-name" placeholder="e.g. Prelims 2026"></div><div class="field" style="min-width:150px;"><label>Date</label><input type="date" id="ex-date"></div><button class="btn" id="ex-add">Add</button></div>${S.exams.length?`<div class="cd-list">${S.exams.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(e=>`<div class="cd-list-row" data-ex="${e.id}"><span>${esc(e.name)} · <span style="color:var(--ink-soft);">${fmtDate(e.date)}</span></span><button class="del ex-del">×</button></div>`).join('')}</div>`:''}</div>`:''}
+        ${(dashEdit||!S.exams.length)?`<div class="cd-editor"><div class="add-bar"><div class="field" style="flex:2;min-width:150px;"><label>Exam name</label><input type="text" id="ex-name" placeholder="e.g. Prelims 2026"></div><div class="field" style="min-width:150px;"><label>Date</label><input type="date" id="ex-date"></div><button class="btn" id="ex-add">Add</button></div>${S.exams.length?`<div class="cd-list">${S.exams.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(e=>`<div class="cd-list-row" data-ex="${e.id}"><span>${esc(e.name)} · <span style="color:var(--ink-soft);">${fmtDate(e.date)}</span></span><span><button class="del ex-edit" title="Edit" style="font-size:14px;">✎</button><button class="del ex-del">×</button></span></div>`).join('')}</div>`:''}</div>`:''}
       </div>`; }
   function wToday(){ const t=todayStr(); const h=dayHours(t); const st=dayTaskStats(t); return `<div class="stat accent"><div class="label">Today's Study</div><div class="value">${h.toFixed(1)}<small> hrs</small></div><div class="foot">${st.done}/${st.tot} tasks done</div></div>`; }
   function wStreak(){ const t=todayStr(); let streak=0,cur=t; if(!dayActive(cur)) cur=addDays(cur,-1); while(dayActive(cur)){streak++;cur=addDays(cur,-1);} return `<div class="stat"><div class="label">Current Streak</div><div class="value">${streak}<small> ${streak===1?'day':'days'}</small></div><div class="foot">${streak>0?'Keep it going 🔥':'Start today!'}</div></div>`; }
@@ -1417,6 +1420,14 @@
     const exEdit=document.getElementById('dash-exedit'); if(exEdit) exEdit.onclick=()=>{ dashEdit=!dashEdit; renderDashboard(); };
     const exAdd=document.getElementById('ex-add'); if(exAdd) exAdd.onclick=()=>{ const nm=(document.getElementById('ex-name').value||'').trim(); const dt=document.getElementById('ex-date').value; if(!nm){document.getElementById('ex-name').focus();return;} if(!dt){document.getElementById('ex-date').focus();toast('Pick a date');return;} S.exams.push({id:uid(),name:nm,date:dt}); persist(); toast('Exam added'); renderDashboard(); };
     el.querySelectorAll('.ex-del').forEach(b=>{ const row=b.closest('[data-ex]'); b.onclick=()=>{ S.exams=S.exams.filter(x=>x.id!==row.dataset.ex); persist(); renderDashboard(); }; });
+    el.querySelectorAll('.ex-edit').forEach(b=>{ const row=b.closest('[data-ex]'); b.onclick=()=>{ const ex=S.exams.find(x=>x.id===row.dataset.ex); if(!ex)return;
+      openUiModal(`<button class="icon-btn modal-close" id="exe-x">✕</button><h3>Edit exam</h3>
+        <div class="field" style="margin-bottom:10px;"><label>Exam name</label><input type="text" id="exe-name" value="${esc(ex.name)}"></div>
+        <div class="field" style="margin-bottom:14px;"><label>Date</label><input type="date" id="exe-date" value="${ex.date}"></div>
+        <button class="btn" id="exe-save" style="width:100%;">Save Changes</button>`);
+      document.getElementById('exe-x').onclick=closeUiModal;
+      document.getElementById('exe-save').onclick=()=>{ const nm=(document.getElementById('exe-name').value||'').trim(); const dt=document.getElementById('exe-date').value; if(!nm||!dt){toast('Name and date required');return;} ex.name=nm; ex.date=dt; persist(); closeUiModal(); renderDashboard(); toast('Exam updated'); };
+    }; });
     // quick actions + deadlines + latest links
     el.querySelectorAll('.qa').forEach(b=>b.onclick=()=>{ const a=b.dataset.qa; if(a==='pomo') goPomodoro(); else goAny(a); });
     el.querySelectorAll('.dl-row').forEach(r=>r.onclick=()=>{ const id=r.dataset.go; const per=r.dataset.period; if(id==='weekly'&&per) curWeek=per; if(id==='monthly'&&per) curMonth=per; if(id) goAny(id); });
@@ -1438,7 +1449,7 @@
     const done=tasks.filter(x=>x.done).length, tot=tasks.length, pct=tot?Math.round(done/tot*100):0;
     const prev=addDays(curDate,-1); const prevTasks=(S.days[prev]&&Array.isArray(S.days[prev].tasks))?S.days[prev].tasks:[];
     el.innerHTML=`
-      <div class="section-head"><div><h2>Daily Tracker</h2><p>Set your tasks for the day, tick them off, and log study hours.</p></div>
+      <div class="section-head"><div><h2>${esc(builtinLabel('daily'))}</h2><p>Set your tasks for the day, tick them off, and log study hours.</p></div>
         <div class="date-nav"><button class="arrow" id="d-prev">‹</button><input type="date" id="d-date" value="${curDate}" style="width:auto;"><button class="arrow" id="d-next">›</button></div></div>
       <div class="grid g-2">
         <div class="card"><div class="row-flex" style="justify-content:space-between;margin-bottom:10px;"><h2 style="font-family:'Fraunces',serif;font-size:18px;margin:0;">Tasks ${isToday?'· Today':''}</h2><span class="pill ${pct===100&&tot?'green':'gold'}">${done}/${tot}${tot?` · ${pct}%`:''}</span></div>
@@ -1484,7 +1495,7 @@
     if(isW){ const s=key,e=addDays(key,6); label=`${fmtDateShort(s)} – ${fmtDateShort(e)}, ${new Date(e+'T00:00:00').getFullYear()}`; isCur=key===weekStart(todayStr()); nav=`<input type="date" class="p-date" value="${key}" style="width:150px;">`; }
     else { label=new Date(key+'-01T00:00:00').toLocaleDateString(undefined,{month:'long',year:'numeric'}); isCur=key===todayStr().slice(0,7); nav=`<input type="date" class="p-month" value="${key}-01" style="width:150px;">`; }
     el.innerHTML=`
-      <div class="section-head"><div><h2>${isW?'Weekly':'Monthly'} Targets</h2><p>${label}${isCur?(isW?' · This week':' · This month'):''}</p></div>
+      <div class="section-head"><div><h2>${esc(builtinLabel(isW?'weekly':'monthly'))}</h2><p>${label}${isCur?(isW?' · This week':' · This month'):''}</p></div>
         <div class="date-nav"><button class="arrow p-prev">‹</button>${nav}<button class="arrow p-next">›</button></div></div>
       <div class="card" style="margin-bottom:16px;"><div class="row-flex" style="justify-content:space-between;margin-bottom:12px;"><span style="font-weight:600;">Completion</span><span class="pill ${pct===100&&tot?'green':'gold'}">${done}/${tot}${tot?` · ${pct}%`:''}</span></div>
         <div class="progress" style="margin-bottom:16px;"><span style="width:${pct}%"></span></div>
@@ -1517,7 +1528,7 @@
     if(!ph.papers.includes(curTestPaper))curTestPaper=ph.papers[0];
     const tests=(S.testSeries[curTestPhase]&&S.testSeries[curTestPhase][curTestPaper]&&S.testSeries[curTestPhase][curTestPaper].tests)||[];
     el.innerHTML=`
-      <div class="section-head"><div><h2>Test Series</h2><p>Prelims · Mains · Sociology Optional</p></div></div>
+      <div class="section-head"><div><h2>${esc(builtinLabel('tests'))}</h2><p>Prelims · Mains · Sociology Optional</p></div></div>
       <div class="ts-phase-row">${TS_PHASES.map(p=>`<button class="ts-phase-btn${p.k===curTestPhase?' on':''}" data-phase="${p.k}">${p.l}</button>`).join('')}</div>
       <div class="ts-paper-row">${ph.papers.map(p=>`<button class="ts-paper-btn${p===curTestPaper?' on':''}" data-paper="${p}">${TS_TAB[p]||p}</button>`).join('')}</div>
       <div class="ts-body">
@@ -1534,6 +1545,7 @@
     const ab=document.getElementById('ts-add-btn');if(ab)ab.onclick=()=>tsAddForm(curTestPhase,curTestPaper);
     const cb=document.getElementById('ts-cutoff-btn');if(cb)cb.onclick=()=>uiPrompt({title:'Set GS Cutoff Target',label:'Expected cutoff (/200)',placeholder:'110',value:String(S.testSeries.cutoffs.gs),okText:'Save',onOk:v=>{const n=+v;if(n>0&&n<=200){S.testSeries.cutoffs.gs=n;persist();renderTests();toast('Cutoff updated');}}});
     el.querySelectorAll('.ts-del-btn').forEach(b=>b.onclick=()=>uiConfirm({title:'Remove this entry?',message:'This cannot be undone.',okText:'Delete',danger:true,onOk:()=>{S.testSeries[curTestPhase][curTestPaper].tests.splice(+b.dataset.idx,1);persist();renderTests();}}));
+    el.querySelectorAll('.ts-edit-btn').forEach(b=>b.onclick=()=>tsAddForm(curTestPhase,curTestPaper,b.dataset.id));
   }
 
   function tsSummaryHtml(phase,paper,tests){
@@ -1596,76 +1608,84 @@
         body=`<div class="ts-row"><span class="ts-sc" style="color:${col}">${sc||'—'}<small>/250</small></span>${pct?`<span class="ts-chip">${pct}%</span>`:''} ${t.evalScore?`<span class="ts-chip">Eval ${t.evalScore}/250</span>`:''} ${t.airRank?`<span class="ts-chip ts-air">AIR ${t.airRank}</span>`:''}</div>`;
         if(t.introR||t.structR||t.contR||t.conclR){const r=(v,l)=>v?`<span class="ts-chip">${l} ${'★'.repeat(Math.min(5,v))}${'☆'.repeat(5-Math.min(5,v))}</span>`:'';foot=`<div class="ts-ratings">${r(t.introR,'Intro')}${r(t.structR,'Struct')}${r(t.contR,'Content')}${r(t.conclR,'Concl')}</div>`;}
       }
-      return`<div class="ts-card"><div class="ts-card-head"><div class="ts-card-left"><span class="ts-no">Test ${t.testNo||'—'}</span>${t.code?`<span class="ts-code">[${esc(t.code)}]</span>`:''} ${t.testType?`<span class="ts-type">${esc(t.testType)}</span>`:''}</div><div class="ts-card-right"><span class="ts-date">${t.date?fmtDateShort(t.date):''}</span><button class="del ts-del-btn" data-idx="${i}">×</button></div></div>${body}${foot}${t.syllabus?`<div class="ts-syl"><span class="ts-syl-tag">Syllabus</span> ${esc(t.syllabus)}</div>`:''}${t.notes?`<div class="ts-notes">${esc(t.notes)}</div>`:''}</div>`;
+      return`<div class="ts-card"><div class="ts-card-head"><div class="ts-card-left"><span class="ts-no">Test ${t.testNo||'—'}</span>${t.code?`<span class="ts-code">[${esc(t.code)}]</span>`:''} ${t.testType?`<span class="ts-type">${esc(t.testType)}</span>`:''}</div><div class="ts-card-right"><span class="ts-date">${t.date?fmtDateShort(t.date):''}</span><button class="del ts-edit-btn" data-id="${t.id}" title="Edit" style="color:var(--accent);font-size:14px;">✎</button><button class="del ts-del-btn" data-idx="${i}">×</button></div></div>${body}${foot}${t.syllabus?`<div class="ts-syl"><span class="ts-syl-tag">Syllabus</span> ${esc(t.syllabus)}</div>`:''}${t.notes?`<div class="ts-notes">${esc(t.notes)}</div>`:''}</div>`;
     }).join('')}</div>`;
   }
 
-  function tsAddForm(phase,paper){
+  function tsAddForm(phase,paper,editId){
     if(!S.testSeries)S.testSeries=blankTestSeries();
+    const arr=S.testSeries[phase][paper].tests;
+    const editing=editId?arr.find(t=>t.id===editId):null;
+    const ev=(k,d)=>{ const dv=(d===undefined?'':d); if(!editing) return dv; const v=editing[k]; return (v===null||v===undefined)?'':v; };
     const label=TS_LABELS[paper]||paper;
     const types=phase==='prelims'?['Fundamental','Applied','Full Length']:phase==='sociology'?['Fundamental','Advanced','Full Length']:['Fundamental','Advanced Sectional','Full Length'];
+    const curType=String(ev('testType',''));
+    const isCustomType=!!curType&&types.indexOf(curType)<0;
     const showSyl=(phase==='mains'||phase==='sociology');
     const baseF=`<div class="grid g-2">
-      <div class="field"><label>Test #</label><input type="number" id="tsf-no" min="1" placeholder="e.g. 1"></div>
-      <div class="field"><label>Date</label><input type="date" id="tsf-date" value="${todayStr()}"></div>
-      <div class="field"><label>Test Type</label><select id="tsf-type"><option value="">— Select —</option>${types.map(t=>`<option>${t}</option>`).join('')}<option value="__custom">+ Custom…</option></select></div>
-      <div class="field"><label>Test Code</label><input type="text" id="tsf-code" placeholder="e.g. 5613"></div>
+      <div class="field"><label>Test #</label><input type="number" id="tsf-no" min="1" placeholder="e.g. 1" value="${ev('testNo')}"></div>
+      <div class="field"><label>Date</label><input type="date" id="tsf-date" value="${ev('date',todayStr())||todayStr()}"></div>
+      <div class="field"><label>Test Type</label><select id="tsf-type"><option value="">— Select —</option>${types.map(t=>`<option${curType===t?' selected':''}>${t}</option>`).join('')}<option value="__custom"${isCustomType?' selected':''}>+ Custom…</option></select></div>
+      <div class="field"><label>Test Code</label><input type="text" id="tsf-code" placeholder="e.g. 5613" value="${esc(ev('code'))}"></div>
     </div>
-    <div class="field" id="tsf-type-custom-wrap" style="display:none;margin-top:2px;"><label>Custom test type</label><input type="text" id="tsf-type-custom" placeholder="e.g. Revision Test / Mini Test"></div>
-    ${showSyl?`<div class="field" style="margin-top:2px;"><label>Syllabus / Topics covered</label><textarea id="tsf-syl" placeholder="e.g. Polity Part 1, Federalism, Constitutional Bodies..."></textarea></div>`:''}
-    <div class="field" style="margin-top:2px;"><label>AIR Rank (optional)</label><input type="number" id="tsf-air" min="1" placeholder="—"></div>`;
+    <div class="field" id="tsf-type-custom-wrap" style="display:${isCustomType?'':'none'};margin-top:2px;"><label>Custom test type</label><input type="text" id="tsf-type-custom" placeholder="e.g. Revision Test / Mini Test" value="${isCustomType?esc(curType):''}"></div>
+    ${showSyl?`<div class="field" style="margin-top:2px;"><label>Syllabus / Topics covered</label><textarea id="tsf-syl" placeholder="e.g. Polity Part 1, Federalism, Constitutional Bodies...">${esc(ev('syllabus'))}</textarea></div>`:''}
+    <div class="field" style="margin-top:2px;"><label>AIR Rank (optional)</label><input type="number" id="tsf-air" min="1" placeholder="—" value="${ev('airRank')}"></div>`;
     let specF='';
     if(phase==='prelims'){
       const total=paper==='GS'?100:80;
       specF=`<div class="set-h" style="margin-top:12px;">Score</div><div class="grid g-2">
-        <div class="field"><label>Correct (max ${total})</label><input type="number" id="tsf-c" min="0" max="${total}" placeholder="0"></div>
-        <div class="field"><label>Wrong</label><input type="number" id="tsf-w" min="0" max="${total}" placeholder="0"></div>
+        <div class="field"><label>Correct (max ${total})</label><input type="number" id="tsf-c" min="0" max="${total}" placeholder="0" value="${ev('correct')}"></div>
+        <div class="field"><label>Wrong</label><input type="number" id="tsf-w" min="0" max="${total}" placeholder="0" value="${ev('wrong')}"></div>
       </div><div id="tsf-live" class="ts-live"></div>`;
     }else if(phase==='mains'&&paper==='Essay'){
+      const eSel=(id,cur)=>['Social','Political','Philosophical','Abstract','Environment','Ethics'].map(t=>`<option${cur===t?' selected':''}>${t}</option>`).join('');
       specF=`<div class="set-h" style="margin-top:12px;">Essay 1</div>
-        <div class="field"><label>Topic</label><input type="text" id="tsf-e1t" placeholder="Essay title or keywords"></div>
+        <div class="field"><label>Topic</label><input type="text" id="tsf-e1t" placeholder="Essay title or keywords" value="${esc(ev('e1topic'))}"></div>
         <div class="grid g-2">
-          <div class="field"><label>Type</label><select id="tsf-e1type"><option>Social</option><option>Political</option><option>Philosophical</option><option>Abstract</option><option>Environment</option><option>Ethics</option></select></div>
-          <div class="field"><label>Self marks (/125)</label><input type="number" id="tsf-e1s" min="0" max="125"></div>
-          <div class="field"><label>Evaluator marks</label><input type="number" id="tsf-e1e" min="0" max="125" placeholder="optional"></div>
+          <div class="field"><label>Type</label><select id="tsf-e1type">${eSel('e1',String(ev('e1type','Social')||'Social'))}</select></div>
+          <div class="field"><label>Self marks (/125)</label><input type="number" id="tsf-e1s" min="0" max="125" value="${ev('e1self')}"></div>
+          <div class="field"><label>Evaluator marks</label><input type="number" id="tsf-e1e" min="0" max="125" placeholder="optional" value="${ev('e1eval')}"></div>
         </div>
         <div class="set-h" style="margin-top:4px;">Essay 2</div>
-        <div class="field"><label>Topic</label><input type="text" id="tsf-e2t" placeholder="Essay title or keywords"></div>
+        <div class="field"><label>Topic</label><input type="text" id="tsf-e2t" placeholder="Essay title or keywords" value="${esc(ev('e2topic'))}"></div>
         <div class="grid g-2">
-          <div class="field"><label>Type</label><select id="tsf-e2type"><option>Social</option><option>Political</option><option>Philosophical</option><option>Abstract</option><option>Environment</option><option>Ethics</option></select></div>
-          <div class="field"><label>Self marks (/125)</label><input type="number" id="tsf-e2s" min="0" max="125"></div>
-          <div class="field"><label>Evaluator marks</label><input type="number" id="tsf-e2e" min="0" max="125" placeholder="optional"></div>
+          <div class="field"><label>Type</label><select id="tsf-e2type">${eSel('e2',String(ev('e2type','Social')||'Social'))}</select></div>
+          <div class="field"><label>Self marks (/125)</label><input type="number" id="tsf-e2s" min="0" max="125" value="${ev('e2self')}"></div>
+          <div class="field"><label>Evaluator marks</label><input type="number" id="tsf-e2e" min="0" max="125" placeholder="optional" value="${ev('e2eval')}"></div>
         </div>`;
     }else{
       specF=`<div class="set-h" style="margin-top:12px;">Marks</div><div class="grid g-2">
-        <div class="field"><label>Score /250</label><input type="number" id="tsf-score" min="0" max="250"></div>
-        <div class="field"><label>Evaluator score /250</label><input type="number" id="tsf-eval" min="0" max="250" placeholder="optional"></div>
+        <div class="field"><label>Score /250</label><input type="number" id="tsf-score" min="0" max="250" value="${ev('score')}"></div>
+        <div class="field"><label>Evaluator score /250</label><input type="number" id="tsf-eval" min="0" max="250" placeholder="optional" value="${ev('evalScore')}"></div>
       </div>
       <div class="set-h" style="margin-top:4px;">Self Assessment (1–5)</div><div class="grid g-2">
-        <div class="field"><label>Intro quality</label><input type="number" id="tsf-intro" min="1" max="5" placeholder="1–5"></div>
-        <div class="field"><label>Structure</label><input type="number" id="tsf-struct" min="1" max="5" placeholder="1–5"></div>
-        <div class="field"><label>Content</label><input type="number" id="tsf-cont" min="1" max="5" placeholder="1–5"></div>
-        <div class="field"><label>Conclusion</label><input type="number" id="tsf-concl" min="1" max="5" placeholder="1–5"></div>
+        <div class="field"><label>Intro quality</label><input type="number" id="tsf-intro" min="1" max="5" placeholder="1–5" value="${ev('introR')}"></div>
+        <div class="field"><label>Structure</label><input type="number" id="tsf-struct" min="1" max="5" placeholder="1–5" value="${ev('structR')}"></div>
+        <div class="field"><label>Content</label><input type="number" id="tsf-cont" min="1" max="5" placeholder="1–5" value="${ev('contR')}"></div>
+        <div class="field"><label>Conclusion</label><input type="number" id="tsf-concl" min="1" max="5" placeholder="1–5" value="${ev('conclR')}"></div>
       </div>`;
     }
-    openUiModal(`<button class="icon-btn modal-close" id="tsf-x">✕</button><h3>Log Test — ${esc(label)}</h3>${baseF}${specF}<div class="field" style="margin-top:10px;"><label>Notes / Remarks</label><textarea id="tsf-notes" placeholder="Topics to revise, evaluator feedback..."></textarea></div><button class="btn" id="tsf-save" style="margin-top:14px;width:100%;">Save Entry</button>`);
+    openUiModal(`<button class="icon-btn modal-close" id="tsf-x">✕</button><h3>${editing?'Edit':'Log'} Test — ${esc(label)}</h3>${baseF}${specF}<div class="field" style="margin-top:10px;"><label>Notes / Remarks</label><textarea id="tsf-notes" placeholder="Topics to revise, evaluator feedback...">${esc(ev('notes'))}</textarea></div><button class="btn" id="tsf-save" style="margin-top:14px;width:100%;">${editing?'Save Changes':'Save Entry'}</button>`);
     document.getElementById('tsf-x').onclick=closeUiModal;
     const typeSel=document.getElementById('tsf-type');
     if(typeSel)typeSel.onchange=()=>{const w=document.getElementById('tsf-type-custom-wrap');if(w)w.style.display=typeSel.value==='__custom'?'':'none';};
     if(phase==='prelims'){
       const live=()=>{const c=+(document.getElementById('tsf-c').value||0),w=+(document.getElementById('tsf-w').value||0),total=paper==='GS'?100:80;const sc=paper==='GS'?tsGSScore({correct:c,wrong:w}):tsCSATScore({correct:c});const acc=c+w>0?Math.round(c/(c+w)*100):0,u=total-c-w;const lv=document.getElementById('tsf-live');if(lv&&(c||w)){let ex='';if(paper==='GS'){const gap=Math.round((sc-S.testSeries.cutoffs.gs)*10)/10;ex=`<span style="color:${gap>=0?'var(--green)':'var(--red)'};font-weight:700">vs Cutoff(${S.testSeries.cutoffs.gs}): ${gap>=0?'+':''}${gap}</span>`;}else{const q=sc>=S.testSeries.cutoffs.csat;ex=`<span style="color:${q?'var(--green)':'var(--red)'};font-weight:700">${q?'✓ Qualifies (≥66)':'✗ Below cutoff (66)'}</span>`;}lv.innerHTML=`<div class="ts-row" style="gap:12px;flex-wrap:wrap;font-size:13px;"><span>Score <b>${sc}</b></span><span>Acc <b>${acc}%</b></span><span>Unattempted <b>${u}</b></span>${ex}</div>`;}};
       ['tsf-c','tsf-w'].forEach(id=>{const e=document.getElementById(id);if(e)e.oninput=live;});
+      if(editing)live();
     }
     document.getElementById('tsf-save').onclick=()=>{
       const gv=id=>{const e=document.getElementById(id);return e?e.value:null;};
       const gn=id=>{const v=+(gv(id)||0);return v||null;};
       let tt=gv('tsf-type')||'';if(tt==='__custom')tt=(gv('tsf-type-custom')||'').trim();
-      const entry={id:uid(),testNo:gn('tsf-no'),date:gv('tsf-date')||todayStr(),testType:tt,code:gv('tsf-code')||'',airRank:gn('tsf-air'),notes:(gv('tsf-notes')||'').trim(),ts:Date.now()};
+      const entry={testNo:gn('tsf-no'),date:gv('tsf-date')||todayStr(),testType:tt,code:gv('tsf-code')||'',airRank:gn('tsf-air'),notes:(gv('tsf-notes')||'').trim()};
       if(showSyl)entry.syllabus=(gv('tsf-syl')||'').trim();
       if(phase==='prelims'){entry.correct=+(gv('tsf-c')||0);entry.wrong=+(gv('tsf-w')||0);}
       else if(phase==='mains'&&paper==='Essay'){entry.e1topic=gv('tsf-e1t')||'';entry.e1type=gv('tsf-e1type')||'';entry.e1self=gn('tsf-e1s');entry.e1eval=gn('tsf-e1e');entry.e2topic=gv('tsf-e2t')||'';entry.e2type=gv('tsf-e2type')||'';entry.e2self=gn('tsf-e2s');entry.e2eval=gn('tsf-e2e');}
       else{entry.score=gn('tsf-score');entry.evalScore=gn('tsf-eval');entry.introR=gn('tsf-intro');entry.structR=gn('tsf-struct');entry.contR=gn('tsf-cont');entry.conclR=gn('tsf-concl');}
-      S.testSeries[phase][paper].tests.push(entry);persist();closeUiModal();renderTests();toast('Test logged ✓');
+      if(editing){Object.assign(editing,entry);}else{arr.push(Object.assign({id:uid(),ts:Date.now()},entry));}
+      persist();closeUiModal();renderTests();toast(editing?'Test updated ✓':'Test logged ✓');
     };
   }
 
@@ -1681,7 +1701,7 @@
     const upcoming=all.filter(u=>(u.date||'')>=today),past=all.filter(u=>(u.date||'')<today);
     const next=upcoming[0];
     el.innerHTML=`
-      <div class="section-head"><div><h2>Upcoming Tests</h2><p>Schedule tests ahead — Prelims · Mains · Sociology</p></div></div>
+      <div class="section-head"><div><h2>${esc(builtinLabel('upcoming'))}</h2><p>Schedule tests ahead — Prelims · Mains · Sociology</p></div></div>
       <div class="ts-phase-row">${TS_PHASES.map(p=>`<button class="ts-phase-btn${p.k===curTestPhase?' on':''}" data-phase="${p.k}">${p.l}</button>`).join('')}</div>
       <div class="ts-paper-row">${ph.papers.map(p=>`<button class="ts-paper-btn${p===curTestPaper?' on':''}" data-paper="${p}">${TS_TAB[p]||p}</button>`).join('')}</div>
       <div class="ts-body">
@@ -1695,38 +1715,44 @@
     const ab=document.getElementById('up-add-btn');if(ab)ab.onclick=()=>upcomingAddForm(curTestPhase,curTestPaper);
     el.querySelectorAll('.up-log-btn').forEach(b=>b.onclick=()=>{const u=S.testSeries.upcoming.find(x=>x.id===b.dataset.id);if(u){curTestPhase=u.phase;curTestPaper=u.paper;goToTests(u.phase,u.paper);setTimeout(()=>tsAddForm(u.phase,u.paper),60);}});
     el.querySelectorAll('.up-del-btn').forEach(b=>b.onclick=()=>{S.testSeries.upcoming=S.testSeries.upcoming.filter(x=>x.id!==b.dataset.id);persist();renderUpcoming();});
+    el.querySelectorAll('.up-edit-btn').forEach(b=>b.onclick=()=>{const u=S.testSeries.upcoming.find(x=>x.id===b.dataset.id);if(u)upcomingAddForm(u.phase,u.paper,u.id);});
   }
 
   function daysUntilLabel(date){if(!date)return'—';const d=Math.round((new Date(date+'T00:00:00')-new Date(todayStr()+'T00:00:00'))/86400000);if(d<0)return Math.abs(d)+(Math.abs(d)===1?' day ago':' days ago');return d===0?'Today':d===1?'1 day':d+' days';}
 
   function upCardHtml(u,isPast){
-    return`<div class="ts-card${isPast?' ts-card-past':''}"><div class="ts-card-head"><div class="ts-card-left"><span class="ts-no">Test ${u.testNo||'—'}</span>${u.code?`<span class="ts-code">[${esc(u.code)}]</span>`:''} ${u.testType?`<span class="ts-type">${esc(u.testType)}</span>`:''}</div><div class="ts-card-right"><span class="ts-date">${u.date?fmtDateShort(u.date):''}</span><button class="del up-del-btn" data-id="${u.id}">×</button></div></div>${!isPast?`<div class="ts-row"><span class="up-countdown">${daysUntilLabel(u.date)}</span><button class="btn ghost sm up-log-btn" data-id="${u.id}" style="margin-left:auto;">Log result →</button></div>`:`<div class="ts-row"><button class="btn ghost sm up-log-btn" data-id="${u.id}" style="margin-left:auto;">Log result →</button></div>`}${u.syllabus?`<div class="ts-syl"><span class="ts-syl-tag">Syllabus</span> ${esc(u.syllabus)}</div>`:''}${u.notes?`<div class="ts-notes">${esc(u.notes)}</div>`:''}</div>`;
+    return`<div class="ts-card${isPast?' ts-card-past':''}"><div class="ts-card-head"><div class="ts-card-left"><span class="ts-no">Test ${u.testNo||'—'}</span>${u.code?`<span class="ts-code">[${esc(u.code)}]</span>`:''} ${u.testType?`<span class="ts-type">${esc(u.testType)}</span>`:''}</div><div class="ts-card-right"><span class="ts-date">${u.date?fmtDateShort(u.date):''}</span><button class="del up-edit-btn" data-id="${u.id}" title="Edit / postpone" style="color:var(--accent);font-size:14px;">✎</button><button class="del up-del-btn" data-id="${u.id}">×</button></div></div>${!isPast?`<div class="ts-row"><span class="up-countdown">${daysUntilLabel(u.date)}</span><button class="btn ghost sm up-log-btn" data-id="${u.id}" style="margin-left:auto;">Log result →</button></div>`:`<div class="ts-row"><button class="btn ghost sm up-log-btn" data-id="${u.id}" style="margin-left:auto;">Log result →</button></div>`}${u.syllabus?`<div class="ts-syl"><span class="ts-syl-tag">Syllabus</span> ${esc(u.syllabus)}</div>`:''}${u.notes?`<div class="ts-notes">${esc(u.notes)}</div>`:''}</div>`;
   }
 
-  function upcomingAddForm(phase,paper){
+  function upcomingAddForm(phase,paper,editId){
     if(!S.testSeries)S.testSeries=blankTestSeries();
     if(!Array.isArray(S.testSeries.upcoming))S.testSeries.upcoming=[];
+    const editing=editId?S.testSeries.upcoming.find(x=>x.id===editId):null;
+    const ev=(k,d)=>{ const dv=(d===undefined?'':d); if(!editing) return dv; const v=editing[k]; return (v===null||v===undefined)?'':v; };
     const label=TS_LABELS[paper]||paper;
     const types=phase==='prelims'?['Fundamental','Applied','Full Length']:phase==='sociology'?['Fundamental','Advanced','Full Length']:['Fundamental','Advanced Sectional','Full Length'];
-    openUiModal(`<button class="icon-btn modal-close" id="upf-x">✕</button><h3>Schedule Test — ${esc(label)}</h3>
+    const curType=String(ev('testType',''));
+    const isCustomType=!!curType&&types.indexOf(curType)<0;
+    openUiModal(`<button class="icon-btn modal-close" id="upf-x">✕</button><h3>${editing?'Edit':'Schedule'} Test — ${esc(label)}</h3>
       <div class="grid g-2">
-        <div class="field"><label>Test #</label><input type="number" id="upf-no" min="1" placeholder="e.g. 1"></div>
-        <div class="field"><label>Date</label><input type="date" id="upf-date" value="${todayStr()}"></div>
-        <div class="field"><label>Test Type</label><select id="upf-type"><option value="">— Select —</option>${types.map(t=>`<option>${t}</option>`).join('')}<option value="__custom">+ Custom…</option></select></div>
-        <div class="field"><label>Test Code</label><input type="text" id="upf-code" placeholder="e.g. 5613"></div>
+        <div class="field"><label>Test #</label><input type="number" id="upf-no" min="1" placeholder="e.g. 1" value="${ev('testNo')}"></div>
+        <div class="field"><label>Date</label><input type="date" id="upf-date" value="${ev('date',todayStr())||todayStr()}"></div>
+        <div class="field"><label>Test Type</label><select id="upf-type"><option value="">— Select —</option>${types.map(t=>`<option${curType===t?' selected':''}>${t}</option>`).join('')}<option value="__custom"${isCustomType?' selected':''}>+ Custom…</option></select></div>
+        <div class="field"><label>Test Code</label><input type="text" id="upf-code" placeholder="e.g. 5613" value="${esc(ev('code'))}"></div>
       </div>
-      <div class="field" id="upf-type-custom-wrap" style="display:none;margin-top:2px;"><label>Custom test type</label><input type="text" id="upf-type-custom" placeholder="e.g. Revision Test / Mini Test"></div>
-      <div class="field" style="margin-top:2px;"><label>Syllabus / Topics to cover</label><textarea id="upf-syl" placeholder="What to prepare for this test..."></textarea></div>
-      <div class="field" style="margin-top:2px;"><label>Notes / Remarks</label><textarea id="upf-notes" placeholder="Goal, target score, prep plan..."></textarea></div>
-      <button class="btn" id="upf-save" style="margin-top:14px;width:100%;">Schedule Test</button>`);
+      <div class="field" id="upf-type-custom-wrap" style="display:${isCustomType?'':'none'};margin-top:2px;"><label>Custom test type</label><input type="text" id="upf-type-custom" placeholder="e.g. Revision Test / Mini Test" value="${isCustomType?esc(curType):''}"></div>
+      <div class="field" style="margin-top:2px;"><label>Syllabus / Topics to cover</label><textarea id="upf-syl" placeholder="What to prepare for this test...">${esc(ev('syllabus'))}</textarea></div>
+      <div class="field" style="margin-top:2px;"><label>Notes / Remarks</label><textarea id="upf-notes" placeholder="Goal, target score, prep plan...">${esc(ev('notes'))}</textarea></div>
+      <button class="btn" id="upf-save" style="margin-top:14px;width:100%;">${editing?'Save Changes':'Schedule Test'}</button>`);
     document.getElementById('upf-x').onclick=closeUiModal;
     const ts=document.getElementById('upf-type');if(ts)ts.onchange=()=>{const w=document.getElementById('upf-type-custom-wrap');if(w)w.style.display=ts.value==='__custom'?'':'none';};
     document.getElementById('upf-save').onclick=()=>{
       const gv=id=>{const e=document.getElementById(id);return e?e.value:null;};
       let tt=gv('upf-type')||'';if(tt==='__custom')tt=(gv('upf-type-custom')||'').trim();
       const date=gv('upf-date');if(!date){document.getElementById('upf-date').focus();return;}
-      S.testSeries.upcoming.push({id:uid(),phase,paper,testNo:+(gv('upf-no')||0)||null,date,testType:tt,code:gv('upf-code')||'',syllabus:(gv('upf-syl')||'').trim(),notes:(gv('upf-notes')||'').trim(),ts:Date.now()});
-      persist();closeUiModal();renderUpcoming();toast('Test scheduled ✓');
+      const entry={testNo:+(gv('upf-no')||0)||null,date,testType:tt,code:gv('upf-code')||'',syllabus:(gv('upf-syl')||'').trim(),notes:(gv('upf-notes')||'').trim()};
+      if(editing){Object.assign(editing,entry);}else{S.testSeries.upcoming.push(Object.assign({id:uid(),phase,paper,ts:Date.now()},entry));}
+      persist();closeUiModal();renderUpcoming();toast(editing?'Test updated ✓':'Test scheduled ✓');
     };
   }
 
@@ -1736,14 +1762,15 @@
     if(!S.syllabus.length&&!S.syllabusInit){ S.syllabusInit=true; S.syllabus=[['GS1 – History, Geography, Society'],['GS2 – Polity, Governance, IR'],['GS3 – Economy, Environment, Sci-Tech, Security'],['GS4 – Ethics'],['CSAT'],['Optional Subject'],['Essay']].map(n=>({id:uid(),name:n[0],pct:0})); persist(); }
     const list=S.syllabus; const overall=list.length?Math.round(list.reduce((a,b)=>a+(+b.pct||0),0)/list.length):0;
     el.innerHTML=`
-      <div class="section-head"><div><h2>Syllabus Progress</h2><p>Track how far you've covered each part of the syllabus.</p></div><span class="pill gold">Overall ${overall}%</span></div>
+      <div class="section-head"><div><h2>${esc(builtinLabel('syllabus'))}</h2><p>Track how far you've covered each part of the syllabus.</p></div><span class="pill gold">Overall ${overall}%</span></div>
       <div class="card" style="margin-bottom:16px;"><div class="add-bar"><div class="field" style="flex:2;"><label>Add a subject / paper</label><input type="text" id="syl-name" placeholder="e.g. PSIR Paper 1"></div><button class="btn" id="syl-add">Add</button></div></div>
-      <div class="card">${list.map(x=>`<div style="padding:14px 4px;border-bottom:1px solid var(--line-soft);" data-syl="${x.id}"><div class="row-flex" style="justify-content:space-between;margin-bottom:8px;"><span style="font-weight:600;font-size:15px;">${esc(x.name)}</span><div class="row-flex"><span class="pill ${x.pct>=100?'green':x.pct>=50?'gold':''}">${x.pct}%</span><button class="del syl-del">×</button></div></div><input type="range" min="0" max="100" step="5" value="${x.pct}" class="syl-range" style="width:100%;accent-color:var(--accent);"></div>`).join('')}</div>`;
+      <div class="card">${list.map(x=>`<div style="padding:14px 4px;border-bottom:1px solid var(--line-soft);" data-syl="${x.id}"><div class="row-flex" style="justify-content:space-between;margin-bottom:8px;"><span style="font-weight:600;font-size:15px;">${esc(x.name)}</span><div class="row-flex"><span class="pill ${x.pct>=100?'green':x.pct>=50?'gold':''}">${x.pct}%</span><button class="del syl-edit" title="Rename" style="color:var(--accent);font-size:14px;">✎</button><button class="del syl-del">×</button></div></div><input type="range" min="0" max="100" step="5" value="${x.pct}" class="syl-range" style="width:100%;accent-color:var(--accent);"></div>`).join('')}</div>`;
     document.getElementById('syl-add').onclick=()=>{ const n=document.getElementById('syl-name'); const name=n.value.trim(); if(!name){n.focus();return;} S.syllabus.push({id:uid(),name,pct:0}); persist(); renderSyllabus(); toast('Subject added'); };
     el.querySelectorAll('[data-syl]').forEach(row=>{ const id=row.dataset.syl; const item=list.find(x=>x.id===id);
       row.querySelector('.syl-range').oninput=e=>{ item.pct=+e.target.value; row.querySelector('.pill').textContent=item.pct+'%'; };
       row.querySelector('.syl-range').onchange=()=>{ persist(); renderSyllabus(); };
       row.querySelector('.syl-del').onclick=()=>{ S.syllabus=list.filter(x=>x.id!==id); persist(); renderSyllabus(); };
+      row.querySelector('.syl-edit').onclick=()=>uiPrompt({ title:'Rename subject', label:'Subject / paper name', value:item.name, okText:'Save', onOk:v=>{ const nm=(v||'').trim(); if(nm){ item.name=nm; persist(); renderSyllabus(); toast('Renamed'); } } });
     });
   }
 
@@ -1788,6 +1815,7 @@
               <a class="t-title res-open" href="${esc(normUrl(it.url))}" target="_blank" rel="noopener noreferrer" style="color:var(--ink);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(it.label||it.url)} ↗</a>
               <div class="t-sub"><span style="color:var(--ink-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;display:block;">${esc(it.url)}</span></div>
             </div>
+            <button class="del res-edit" title="Edit" style="color:var(--accent);font-size:14px;">✎</button>
             <button class="del res-del">×</button>
           </div>`).join('') : `<div class="empty">No links here yet${resFilter!=='All'?' for '+esc(resFilter):''} — add one above.</div>`}
       </div>`;
@@ -1807,7 +1835,17 @@
     document.getElementById('res-rename').onclick=()=>{ uiPrompt({ title:'Rename tab', label:'Tab name', value:tab.name, onOk:(n)=>{ const nm=(n||'').trim(); if(nm){ tab.name=nm; persist(); render(); } } }); };
     const delT=document.getElementById('res-deltab'); if(delT) delT.onclick=()=>{ uiConfirm({ title:'Delete tab?', message:`Delete the "${tab.name}" tab and all its links?`, okText:'Delete', danger:true, onOk:()=>{ S.resourceTabs=S.resourceTabs.filter(t=>t.id!==tab.id); activeTab='dashboard'; persist(); render(); } }); };
     el.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{ resFilter=b.dataset.filter; renderResource(); });
-    el.querySelectorAll('.target-row').forEach(row=>{ const id=row.dataset.id; row.querySelector('.res-del').onclick=(e)=>{ e.preventDefault(); e.stopPropagation(); tab.items=tab.items.filter(x=>x.id!==id); persist(); renderResource(); }; });
+    el.querySelectorAll('.target-row').forEach(row=>{ const id=row.dataset.id; row.querySelector('.res-del').onclick=(e)=>{ e.preventDefault(); e.stopPropagation(); tab.items=tab.items.filter(x=>x.id!==id); persist(); renderResource(); };
+      const re=row.querySelector('.res-edit'); if(re) re.onclick=(e)=>{ e.preventDefault(); e.stopPropagation(); const it=tab.items.find(x=>x.id===id); if(!it)return;
+        openUiModal(`<button class="icon-btn modal-close" id="rle-x">✕</button><h3>Edit link</h3>
+          <div class="field" style="margin-bottom:10px;"><label>Label</label><input type="text" id="rle-label" value="${esc(it.label)}"></div>
+          <div class="field" style="margin-bottom:10px;"><label>Link (URL)</label><input type="text" id="rle-url" value="${esc(it.url)}"></div>
+          <div class="field" style="margin-bottom:14px;"><label>Type</label><select id="rle-type">${typeSet.map(t=>`<option${it.type===t?' selected':''}>${esc(t)}</option>`).join('')}</select></div>
+          <button class="btn" id="rle-save" style="width:100%;">Save Changes</button>`);
+        document.getElementById('rle-x').onclick=closeUiModal;
+        document.getElementById('rle-save').onclick=()=>{ const url=normUrl(document.getElementById('rle-url').value); if(!url){toast('URL required');return;} it.label=(document.getElementById('rle-label').value||'').trim()||url; it.url=url; it.type=document.getElementById('rle-type').value||it.type; persist(); closeUiModal(); renderResource(); toast('Link updated'); };
+      };
+    });
   }
 
   /* ===================== CUSTOM TABS ===================== */
@@ -1920,13 +1958,14 @@
     el.innerHTML=ctabHead(tab,'Tick things off — a to-do or crosscheck list.',`<span class="pill ${pct===100&&items.length?'green':'gold'}">${done}/${items.length} · ${pct}%</span>`)
       +`<div class="card" style="margin-bottom:16px;"><div class="progress big-progress" style="margin-bottom:16px;"><span style="width:${pct}%"></span></div>
          <div class="add-bar"><div class="field" style="flex:2;"><label>Add item</label><input type="text" id="cl-new" placeholder="e.g. Revise Polity Ch. 5"></div><button class="btn" id="cl-add">Add</button>${items.length?'<button class="btn ghost" id="cl-reset">Uncheck all</button>':''}</div></div>
-       <div class="card">${items.length?items.map(i=>`<div class="task-row ${i.done?'done':''}" data-id="${i.id}"><div class="chk ${i.done?'on':''}"></div><div class="name">${esc(i.text)}</div><button class="del cl-del">×</button></div>`).join(''):'<div class="empty">Nothing here yet — add your first item above.</div>'}</div>`;
+       <div class="card">${items.length?items.map(i=>`<div class="task-row ${i.done?'done':''}" data-id="${i.id}"><div class="chk ${i.done?'on':''}"></div><input type="text" class="dt-text cl-text" value="${esc(i.text)}"><button class="del cl-del">×</button></div>`).join(''):'<div class="empty">Nothing here yet — add your first item above.</div>'}</div>`;
     const add=()=>{ const n=document.getElementById('cl-new'); const t=n.value.trim(); if(!t){n.focus();return;} tab.items.push({id:uid(),text:t,done:false}); persist(); renderCustom(); };
     document.getElementById('cl-add').onclick=add;
     document.getElementById('cl-new').onkeydown=e=>{ if(e.key==='Enter') add(); };
     const rs=document.getElementById('cl-reset'); if(rs) rs.onclick=()=>{ tab.items.forEach(i=>i.done=false); persist(); renderCustom(); };
     el.querySelectorAll('.task-row').forEach(row=>{ const id=row.dataset.id; const it=items.find(x=>x.id===id);
       row.querySelector('.chk').onclick=()=>{ it.done=!it.done; persist(); renderCustom(); };
+      const tx=row.querySelector('.cl-text'); if(tx){ tx.onblur=e=>{ it.text=e.target.value; persist(); }; tx.onkeydown=e=>{ if(e.key==='Enter') e.target.blur(); }; }
       row.querySelector('.cl-del').onclick=()=>{ tab.items=items.filter(x=>x.id!==id); persist(); renderCustom(); };
     });
   }
@@ -1936,13 +1975,15 @@
     const cols=tab.cols, rows=tab.rows;
     el.innerHTML=ctabHead(tab,'A matrix to crosscheck progress across stages.',`<button class="btn ghost sm" id="xc-addcol">+ Column</button>`)
      +`<div class="card" style="margin-bottom:16px;"><div class="add-bar"><div class="field" style="flex:2;"><label>Add row</label><input type="text" id="xc-newrow" placeholder="e.g. Modern History"></div><button class="btn" id="xc-addrow">Add row</button></div></div>
-       <div class="card"><div class="xgrid-wrap"><table class="xgrid"><thead><tr><th>Item</th>${cols.map(c=>`<th>${esc(c.name)} <button class="del xc-delcol" data-col="${c.id}">×</button></th>`).join('')}<th></th></tr></thead>
-       <tbody>${rows.length?rows.map(r=>`<tr><td>${esc(r.name)}</td>${cols.map(c=>`<td><span class="xcell ${r.cells[c.id]?'on':''}" data-row="${r.id}" data-col="${c.id}"></span></td>`).join('')}<td><button class="del xc-delrow" data-row="${r.id}">×</button></td></tr>`).join(''):`<tr><td colspan="${cols.length+2}"><div class="empty">No rows yet — add one above.</div></td></tr>`}</tbody></table></div></div>`;
+       <div class="card"><div class="xgrid-wrap"><table class="xgrid"><thead><tr><th>Item</th>${cols.map(c=>`<th><span class="xc-colname" data-col="${c.id}" style="cursor:pointer;" title="Tap to rename">${esc(c.name)} <span style="color:var(--accent);font-size:10px;">✎</span></span> <button class="del xc-delcol" data-col="${c.id}">×</button></th>`).join('')}<th></th></tr></thead>
+       <tbody>${rows.length?rows.map(r=>`<tr><td><span class="xc-rowname" data-row="${r.id}" style="cursor:pointer;" title="Tap to rename">${esc(r.name)} <span style="color:var(--accent);font-size:10px;">✎</span></span></td>${cols.map(c=>`<td><span class="xcell ${r.cells[c.id]?'on':''}" data-row="${r.id}" data-col="${c.id}"></span></td>`).join('')}<td><button class="del xc-delrow" data-row="${r.id}">×</button></td></tr>`).join(''):`<tr><td colspan="${cols.length+2}"><div class="empty">No rows yet — add one above.</div></td></tr>`}</tbody></table></div></div>`;
     const addRow=()=>{ const n=document.getElementById('xc-newrow'); const t=n.value.trim(); if(!t){n.focus();return;} tab.rows.push({id:uid(),name:t,cells:{}}); persist(); renderCustom(); };
     document.getElementById('xc-addrow').onclick=addRow;
     document.getElementById('xc-newrow').onkeydown=e=>{ if(e.key==='Enter') addRow(); };
     document.getElementById('xc-addcol').onclick=()=>{ uiPrompt({ title:'New column', label:'Column name', placeholder:'e.g. Read, Revised, Tested', okText:'Add column', onOk:(nm)=>{ const t=(nm||'').trim(); if(t){ tab.cols.push({id:uid(),name:t}); persist(); renderCustom(); } } }); };
     el.querySelectorAll('.xcell').forEach(c=>c.onclick=()=>{ const r=rows.find(x=>x.id===c.dataset.row); if(!r)return; r.cells[c.dataset.col]=!r.cells[c.dataset.col]; persist(); c.classList.toggle('on'); });
+    el.querySelectorAll('.xc-rowname').forEach(s=>s.onclick=()=>{ const r=rows.find(x=>x.id===s.dataset.row); if(!r)return; uiPrompt({ title:'Rename row', label:'Row name', value:r.name, okText:'Save', onOk:v=>{ const nm=(v||'').trim(); if(nm){ r.name=nm; persist(); renderCustom(); } } }); });
+    el.querySelectorAll('.xc-colname').forEach(s=>s.onclick=()=>{ const c=cols.find(x=>x.id===s.dataset.col); if(!c)return; uiPrompt({ title:'Rename column', label:'Column name', value:c.name, okText:'Save', onOk:v=>{ const nm=(v||'').trim(); if(nm){ c.name=nm; persist(); renderCustom(); } } }); });
     el.querySelectorAll('.xc-delcol').forEach(b=>b.onclick=()=>{ if(cols.length<=1){toast('Keep at least one column');return;} uiConfirm({ title:'Delete column?', message:'This removes the column and its ticks.', okText:'Delete', danger:true, onOk:()=>{ tab.cols=cols.filter(x=>x.id!==b.dataset.col); tab.rows.forEach(r=>delete r.cells[b.dataset.col]); persist(); renderCustom(); } }); });
     el.querySelectorAll('.xc-delrow').forEach(b=>b.onclick=()=>{ tab.rows=rows.filter(x=>x.id!==b.dataset.row); persist(); renderCustom(); });
   }
@@ -1953,11 +1994,18 @@
     el.innerHTML=ctabHead(tab,'Goals with deadlines and completion tracking.',`<span class="pill ${pct===100&&tot?'green':'gold'}">${done}/${tot} · ${pct}%</span>`)
      +`<div class="card" style="margin-bottom:16px;"><div class="progress" style="margin-bottom:16px;"><span style="width:${pct}%"></span></div>
         <div class="add-bar"><div class="field" style="flex:2;"><label>New target</label><input type="text" id="ct-title" placeholder="e.g. Finish Modern History – Spectrum"></div><div class="field"><label>Deadline</label><input type="date" id="ct-date"></div><button class="btn" id="ct-add">Add target</button></div></div>
-       <div class="card">${tot?list.map(x=>{const overdue=!x.done&&x.deadline&&x.deadline<today;return `<div class="target-row ${x.done?'done':''}" data-id="${x.id}"><div class="chk ${x.done?'on':''}"></div><div class="meta"><div class="t-title">${esc(x.title)}</div><div class="t-sub">${x.deadline?`<span class="pill ${overdue?'red':''}">${overdue?'Overdue · ':'Due '}${fmtDate(x.deadline)}</span>`:'<span class="pill">No deadline</span>'}${x.done?'<span class="pill green">Completed</span>':''}</div></div><button class="del t-del">×</button></div>`;}).join(''):'<div class="empty">No targets yet — add your first above.</div>'}</div>`;
+       <div class="card">${tot?list.map(x=>{const overdue=!x.done&&x.deadline&&x.deadline<today;return `<div class="target-row ${x.done?'done':''}" data-id="${x.id}"><div class="chk ${x.done?'on':''}"></div><div class="meta"><div class="t-title">${esc(x.title)}</div><div class="t-sub">${x.deadline?`<span class="pill ${overdue?'red':''}">${overdue?'Overdue · ':'Due '}${fmtDate(x.deadline)}</span>`:'<span class="pill">No deadline</span>'}${x.done?'<span class="pill green">Completed</span>':''}</div></div><button class="del t-edit" title="Edit" style="color:var(--accent);font-size:14px;">✎</button><button class="del t-del">×</button></div>`;}).join(''):'<div class="empty">No targets yet — add your first above.</div>'}</div>`;
     document.getElementById('ct-add').onclick=()=>{ const ti=document.getElementById('ct-title'); const da=document.getElementById('ct-date'); const title=ti.value.trim(); if(!title){ti.focus();return;} list.unshift({id:uid(),title,deadline:da.value||'',done:false,created:today}); persist(); renderCustom(); toast('Target added'); };
     el.querySelectorAll('.target-row').forEach(row=>{ const id=row.dataset.id; const it=list.find(x=>x.id===id);
       row.querySelector('.chk').onclick=()=>{ it.done=!it.done; persist(); renderCustom(); };
       row.querySelector('.t-del').onclick=()=>{ tab.items=list.filter(x=>x.id!==id); persist(); renderCustom(); };
+      row.querySelector('.t-edit').onclick=()=>{ openUiModal(`<button class="icon-btn modal-close" id="cte-x">✕</button><h3>Edit target</h3>
+        <div class="field" style="margin-bottom:10px;"><label>Target</label><input type="text" id="cte-title" value="${esc(it.title)}"></div>
+        <div class="field" style="margin-bottom:14px;"><label>Deadline (blank = none)</label><input type="date" id="cte-date" value="${it.deadline||''}"></div>
+        <button class="btn" id="cte-save" style="width:100%;">Save Changes</button>`);
+        document.getElementById('cte-x').onclick=closeUiModal;
+        document.getElementById('cte-save').onclick=()=>{ const t2=(document.getElementById('cte-title').value||'').trim(); if(!t2){toast('Title required');return;} it.title=t2; it.deadline=document.getElementById('cte-date').value||''; persist(); closeUiModal(); renderCustom(); toast('Target updated'); };
+      };
     });
   }
 
@@ -1966,7 +2014,7 @@
     const list=tab.items; const overall=list.length?Math.round(list.reduce((a,b)=>a+(+b.pct||0),0)/list.length):0;
     el.innerHTML=ctabHead(tab,'Percent sliders — your own progress check sheet.',`<span class="pill gold">Overall ${overall}%</span>`)
      +`<div class="card" style="margin-bottom:16px;"><div class="add-bar"><div class="field" style="flex:2;"><label>Add item</label><input type="text" id="cp-name" placeholder="e.g. Optional Paper 1"></div><button class="btn" id="cp-add">Add</button></div></div>
-       <div class="card">${list.length?list.map(x=>`<div style="padding:14px 4px;border-bottom:1px solid var(--line-soft);" data-id="${x.id}"><div class="row-flex" style="justify-content:space-between;margin-bottom:8px;"><span style="font-weight:600;font-size:15px;">${esc(x.name)}</span><div class="row-flex"><span class="pill ${x.pct>=100?'green':x.pct>=50?'gold':''}">${x.pct}%</span><button class="del cp-del">×</button></div></div><input type="range" min="0" max="100" step="5" value="${x.pct}" class="cp-range" style="width:100%;accent-color:var(--accent);"></div>`).join(''):'<div class="empty">No items yet — add one above.</div>'}</div>`;
+       <div class="card">${list.length?list.map(x=>`<div style="padding:14px 4px;border-bottom:1px solid var(--line-soft);" data-id="${x.id}"><div class="row-flex" style="justify-content:space-between;margin-bottom:8px;"><span style="font-weight:600;font-size:15px;">${esc(x.name)}</span><div class="row-flex"><span class="pill ${x.pct>=100?'green':x.pct>=50?'gold':''}">${x.pct}%</span><button class="del cp-edit" title="Rename" style="color:var(--accent);font-size:14px;">✎</button><button class="del cp-del">×</button></div></div><input type="range" min="0" max="100" step="5" value="${x.pct}" class="cp-range" style="width:100%;accent-color:var(--accent);"></div>`).join(''):'<div class="empty">No items yet — add one above.</div>'}</div>`;
     const add=()=>{ const n=document.getElementById('cp-name'); const name=n.value.trim(); if(!name){n.focus();return;} list.push({id:uid(),name,pct:0}); persist(); renderCustom(); };
     document.getElementById('cp-add').onclick=add;
     document.getElementById('cp-name').onkeydown=e=>{ if(e.key==='Enter') add(); };
@@ -1974,6 +2022,7 @@
       rng.oninput=e=>{ it.pct=+e.target.value; row.querySelector('.pill').textContent=it.pct+'%'; };
       rng.onchange=()=>{ persist(); renderCustom(); };
       const d=row.querySelector('.cp-del'); if(d) d.onclick=()=>{ tab.items=list.filter(x=>x.id!==id); persist(); renderCustom(); };
+      const pe=row.querySelector('.cp-edit'); if(pe) pe.onclick=()=>uiPrompt({ title:'Rename item', label:'Name', value:it.name, okText:'Save', onOk:v=>{ const nm=(v||'').trim(); if(nm){ it.name=nm; persist(); renderCustom(); } } });
     });
   }
 
@@ -1982,12 +2031,20 @@
     const list=tab.items;
     el.innerHTML=ctabHead(tab,'Tally counters — track questions, days, anything.','')
      +`<div class="card" style="margin-bottom:16px;"><div class="add-bar"><div class="field" style="flex:2;"><label>Counter name</label><input type="text" id="cn-name" placeholder="e.g. MCQs solved"></div><div class="field" style="max-width:120px;"><label>Goal (optional)</label><input type="number" id="cn-goal" min="0" placeholder="—"></div><button class="btn" id="cn-add">Add</button></div></div>
-       <div class="card">${list.length?list.map(i=>{const hasGoal=i.goal!==''&&i.goal!=null; const pct=hasGoal&&i.goal>0?Math.min(100,Math.round(i.count/i.goal*100)):null; return `<div class="counter-card" data-id="${i.id}"><div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:15px;">${esc(i.name)}</div>${hasGoal?`<div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><div class="progress" style="flex:1;min-width:120px;max-width:240px;"><span style="width:${pct}%"></span></div><span class="pill ${pct>=100?'green':''}">${i.count}/${i.goal} · ${pct}%</span></div>`:''}</div><div class="stepper"><button class="cn-dec">−</button><div class="cval">${i.count}</div><button class="cn-inc">+</button></div><button class="del cn-del">×</button></div>`;}).join(''):'<div class="empty">No counters yet — add one above.</div>'}</div>`;
+       <div class="card">${list.length?list.map(i=>{const hasGoal=i.goal!==''&&i.goal!=null; const pct=hasGoal&&i.goal>0?Math.min(100,Math.round(i.count/i.goal*100)):null; return `<div class="counter-card" data-id="${i.id}"><div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:15px;">${esc(i.name)}</div>${hasGoal?`<div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><div class="progress" style="flex:1;min-width:120px;max-width:240px;"><span style="width:${pct}%"></span></div><span class="pill ${pct>=100?'green':''}">${i.count}/${i.goal} · ${pct}%</span></div>`:''}</div><div class="stepper"><button class="cn-dec">−</button><div class="cval">${i.count}</div><button class="cn-inc">+</button></div><button class="del cn-edit" title="Edit" style="color:var(--accent);font-size:14px;">✎</button><button class="del cn-del">×</button></div>`;}).join(''):'<div class="empty">No counters yet — add one above.</div>'}</div>`;
     document.getElementById('cn-add').onclick=()=>{ const n=document.getElementById('cn-name'); const g=document.getElementById('cn-goal'); const name=n.value.trim(); if(!name){n.focus();return;} const goal=g.value.trim()===''?'':Math.max(0,+g.value||0); list.push({id:uid(),name,count:0,step:1,goal}); persist(); renderCustom(); };
     el.querySelectorAll('.counter-card').forEach(row=>{ const id=row.dataset.id; const it=list.find(x=>x.id===id);
       row.querySelector('.cn-inc').onclick=()=>{ it.count+=it.step||1; persist(); renderCustom(); };
       row.querySelector('.cn-dec').onclick=()=>{ it.count=Math.max(0,it.count-(it.step||1)); persist(); renderCustom(); };
       row.querySelector('.cn-del').onclick=()=>{ tab.items=list.filter(x=>x.id!==id); persist(); renderCustom(); };
+      row.querySelector('.cn-edit').onclick=()=>{ openUiModal(`<button class="icon-btn modal-close" id="cne-x">✕</button><h3>Edit counter</h3>
+        <div class="field" style="margin-bottom:10px;"><label>Name</label><input type="text" id="cne-name" value="${esc(it.name)}"></div>
+        <div class="field" style="margin-bottom:10px;"><label>Goal (blank = none)</label><input type="number" id="cne-goal" min="0" value="${it.goal===''||it.goal==null?'':it.goal}"></div>
+        <div class="field" style="margin-bottom:14px;"><label>Count</label><input type="number" id="cne-count" min="0" value="${it.count}"></div>
+        <button class="btn" id="cne-save" style="width:100%;">Save Changes</button>`);
+        document.getElementById('cne-x').onclick=closeUiModal;
+        document.getElementById('cne-save').onclick=()=>{ const nm=(document.getElementById('cne-name').value||'').trim(); if(!nm){toast('Name required');return;} it.name=nm; const g=document.getElementById('cne-goal').value.trim(); it.goal=g===''?'':Math.max(0,+g||0); it.count=Math.max(0,+document.getElementById('cne-count').value||0); persist(); closeUiModal(); renderCustom(); toast('Counter updated'); };
+      };
     });
   }
 
