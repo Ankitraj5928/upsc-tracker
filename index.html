@@ -131,6 +131,14 @@
   .bar-col.today .d{color:var(--accent);}
 
   .series-card{margin-bottom:16px;}
+  .target-prog{padding:12px 4px;border-bottom:1px solid var(--line-soft);}
+  .target-prog:last-child{border-bottom:none;}
+  .target-prog .tp-head{display:flex;align-items:center;gap:12px;}
+  .target-prog .tp-text{flex:1;border:none;background:transparent;font-size:15px;font-weight:500;padding:6px 0;min-width:0;color:var(--ink);}
+  .target-prog .tp-text:focus{box-shadow:none;border-bottom:1px solid var(--accent);}
+  .target-prog.done .tp-text{text-decoration:line-through;color:var(--ink-faint);}
+  .target-prog .tp-pct{flex:0 0 auto;min-width:46px;justify-content:center;}
+  .target-prog .tp-range{width:100%;margin-top:10px;accent-color:var(--accent);}
   .series-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
   .series-head .name{font-family:'Fraunces',serif;font-size:19px;font-weight:600;}
 
@@ -692,7 +700,7 @@
       }
     }).filter(Boolean);
   }
-  function normPeriodMap(m){ const out={}; if(m&&typeof m==='object'){ Object.keys(m).forEach(k=>{ const b=m[k]; const tasks=Array.isArray(b&&b.tasks)?b.tasks.map(it=>({id:it.id||uid(),text:it.text||it.title||'',done:!!it.done})):[]; if(tasks.length) out[k]={tasks}; }); } return out; }
+  function normPeriodMap(m){ const out={}; if(m&&typeof m==='object'){ Object.keys(m).forEach(k=>{ const b=m[k]; const tasks=Array.isArray(b&&b.tasks)?b.tasks.map(it=>{ const done=!!it.done; let pct=(typeof it.pct==='number')?Math.max(0,Math.min(100,Math.round(it.pct))):(done?100:0); if(done)pct=100; return {id:it.id||uid(),text:it.text||it.title||'',done,pct}; }):[]; if(tasks.length) out[k]={tasks}; }); } return out; }
   function migrateState(o){
     const today=todayStr();
     const tmpl=(o.settings&&Array.isArray(o.settings.tasks)&&o.settings.tasks.length)?o.settings.tasks:DEFAULT_TASKS;
@@ -701,8 +709,8 @@
     Object.keys(days).forEach(d=>{ const dd=days[d]; if(dd&&!Array.isArray(dd.tasks)){ if(dd.checks&&Object.keys(dd.checks).length){ const names=tmpl.slice(); Object.keys(dd.checks).forEach(n=>{ if(names.indexOf(n)<0) names.push(n); }); dd.tasks=names.map(n=>({id:uid(),text:n,done:!!dd.checks[n]})); } } });
     // weekly/monthly all-time lists -> per-week / per-month buckets
     const weeks=normPeriodMap(o.weeks), months=normPeriodMap(o.months);
-    if(Array.isArray(o.weekly)) o.weekly.forEach(x=>{ const ref=x.deadline||x.created||today; const k=weekStart(ref); (weeks[k]=weeks[k]||{tasks:[]}).tasks.push({id:x.id||uid(),text:x.title||'',done:!!x.done}); });
-    if(Array.isArray(o.monthly)) o.monthly.forEach(x=>{ const ref=x.deadline||x.created||today; const k=ref.slice(0,7); (months[k]=months[k]||{tasks:[]}).tasks.push({id:x.id||uid(),text:x.title||'',done:!!x.done}); });
+    if(Array.isArray(o.weekly)) o.weekly.forEach(x=>{ const ref=x.deadline||x.created||today; const k=weekStart(ref); (weeks[k]=weeks[k]||{tasks:[]}).tasks.push({id:x.id||uid(),text:x.title||'',done:!!x.done,pct:x.done?100:0}); });
+    if(Array.isArray(o.monthly)) o.monthly.forEach(x=>{ const ref=x.deadline||x.created||today; const k=ref.slice(0,7); (months[k]=months[k]||{tasks:[]}).tasks.push({id:x.id||uid(),text:x.title||'',done:!!x.done,pct:x.done?100:0}); });
     return {days,weeks,months};
   }
   function normalize(o){ o=o||{}; const mig=migrateState(o); const th=(o.theme&&typeof o.theme==='object')?o.theme:{}; return { settings:(o.settings&&Array.isArray(o.settings.tasks)&&o.settings.tasks.length)?o.settings:{tasks:DEFAULT_TASKS.slice()}, appName:(typeof o.appName==='string'&&o.appName.trim())?o.appName.trim().slice(0,40):'Track your day', theme:{mode:th.mode==='dark'?'dark':'light', accent:THEMES[th.accent]?th.accent:'terracotta'}, days:mig.days, weekly:[], monthly:[], weeks:mig.weeks, months:mig.months, series:o.series||[], syllabus:o.syllabus||[], syllabusInit:!!o.syllabusInit, resTypes:(Array.isArray(o.resTypes)&&o.resTypes.length)?o.resTypes.slice():DEFAULT_RES_TYPES.slice(), resourceTabs:normResourceTabs(o.resourceTabs), customTabs:normCustomTabs(o.customTabs), hiddenBuiltins:Array.isArray(o.hiddenBuiltins)?o.hiddenBuiltins.filter(x=>BUILTIN_IDS.indexOf(x)>=0):[], exams:Array.isArray(o.exams)?o.exams.map(e=>({id:e.id||uid(),name:e.name||'Exam',date:e.date||''})).filter(e=>e.date):[], dashWidgets:Array.isArray(o.dashWidgets)?o.dashWidgets.filter(x=>DASH_WIDGET_IDS.indexOf(x)>=0):DEFAULT_DASH_WIDGETS.slice(), hoursGoal:+o.hoursGoal||0, dashStickies:Array.isArray(o.dashStickies)?o.dashStickies.map(s=>({id:s.id||uid(),text:s.text||'',color:['yellow','green','pink','blue'].indexOf(s.color)>=0?s.color:'yellow'})):[], dashSizes:(o.dashSizes&&typeof o.dashSizes==='object')?Object.keys(o.dashSizes).reduce((m,k)=>{ if(DASH_WIDGET_IDS.indexOf(k)>=0&&(o.dashSizes[k]==='half'||o.dashSizes[k]==='full')) m[k]=o.dashSizes[k]; return m; },{}):{}, photoNotes:Array.isArray(o.photoNotes)?o.photoNotes.map(p=>({id:p.id||uid(),img:p.img||'',text:p.text||'',ts:p.ts||Date.now()})).filter(p=>p.img):[], customQuotes:Array.isArray(o.customQuotes)?o.customQuotes.map(q=>String(q||'').trim()).filter(Boolean):[], customCOI:Array.isArray(o.customCOI)?o.customCOI.map(q=>String(q||'').trim()).filter(Boolean):[], weeklyReviews:(o.weeklyReviews&&typeof o.weeklyReviews==='object')?Object.keys(o.weeklyReviews).reduce((m,k)=>{ const v=o.weeklyReviews[k]; if(typeof v==='string'&&v.trim()) m[k]=v; return m; },{}):{}, testSeries:normTestSeries(o.testSeries), tabNames:(o.tabNames&&typeof o.tabNames==='object')?Object.keys(o.tabNames).reduce((m,k)=>{ if(BUILTIN_IDS.indexOf(k)>=0&&typeof o.tabNames[k]==='string'&&o.tabNames[k].trim()) m[k]=o.tabNames[k].trim().slice(0,30); return m; },{}):{} }; }
@@ -1018,8 +1026,8 @@
   function daysUntil(dateStr){ const a=new Date(todayStr()+'T00:00:00'); const b=new Date(dateStr+'T00:00:00'); return Math.round((b-a)/86400000); }
   function collectDeadlines(){
     const today=todayStr(); const out=[];
-    Object.keys(S.weeks).forEach(k=>{ const end=addDays(k,6); S.weeks[k].tasks.forEach(x=>{ if(!x.done) out.push({title:x.text,deadline:end,src:'Weekly',srcTab:'weekly',period:k,overdue:end<today}); }); });
-    Object.keys(S.months).forEach(k=>{ const end=monthEnd(k); S.months[k].tasks.forEach(x=>{ if(!x.done) out.push({title:x.text,deadline:end,src:'Monthly',srcTab:'monthly',period:k,overdue:end<today}); }); });
+    Object.keys(S.weeks).forEach(k=>{ const end=addDays(k,6); S.weeks[k].tasks.forEach(x=>{ if(!x.done) out.push({title:x.text,deadline:end,src:'Weekly',srcTab:'weekly',period:k,overdue:end<today,pct:(+x.pct||0)}); }); });
+    Object.keys(S.months).forEach(k=>{ const end=monthEnd(k); S.months[k].tasks.forEach(x=>{ if(!x.done) out.push({title:x.text,deadline:end,src:'Monthly',srcTab:'monthly',period:k,overdue:end<today,pct:(+x.pct||0)}); }); });
     S.customTabs.filter(t=>t.type==='targets').forEach(t=>t.items.forEach(x=>{ if(!x.done&&x.deadline) out.push({title:x.title,deadline:x.deadline,src:t.name,srcTab:'custom:'+t.id,period:'',overdue:x.deadline<today}); }));
     out.sort((a,b)=>(a.deadline||'').localeCompare(b.deadline||''));
     return out;
@@ -1237,7 +1245,7 @@
   }
   function wSyllabus(){ const list=S.syllabus||[]; const overall=list.length?Math.round(list.reduce((a,b)=>a+(+b.pct||0),0)/list.length):0; return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Syllabus</h2></div><span class="pill ${overall>=100?'green':overall>=50?'gold':''}">${overall}%</span></div><div class="progress big-progress"><span style="width:${overall}%"></span></div><div style="font-size:12px;color:var(--ink-soft);margin-top:8px;">${list.length?'across '+list.length+' subjects':'Add subjects in the Syllabus tab.'}</div></div>`; }
   function wQuick(){ return `<div class="qa-grid"><button class="qa" data-qa="daily"><span class="qa-ic">📓</span>Log today</button><button class="qa" data-qa="pomo"><span class="qa-ic">🍅</span>Focus timer</button><button class="qa" data-qa="tests"><span class="qa-ic">📝</span>Log a test</button><button class="qa" data-qa="weekly"><span class="qa-ic">🎯</span>Add target</button></div>`; }
-  function wDeadlines(){ const t=todayStr(); const dls=collectDeadlines(); const showD=dls.slice(0,5); const moreD=dls.length-showD.length; return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Deadlines</h2></div>${dls.length?`<span class="pill ${dls.some(d=>d.overdue)?'red':'gold'}">${dls.length} open</span>`:''}</div>${showD.length?showD.map(d=>`<div class="dl-row" data-go="${d.srcTab}" data-period="${esc(d.period||'')}"><div class="dl-meta"><div class="dl-title">${esc(d.title)}</div><div class="dl-src">${esc(d.src)}</div></div><span class="pill ${d.overdue?'red':(d.deadline===t?'gold':'')}">${d.overdue?'Overdue':(daysUntil(d.deadline)===0?'Today':'in '+daysUntil(d.deadline)+'d')}</span></div>`).join('')+(moreD>0?`<div class="dl-more">+${moreD} more</div>`:''):`<div class="mini-note">Nothing due — add deadlines to your weekly, monthly or target tabs.</div>`}</div>`; }
+  function wDeadlines(){ const t=todayStr(); const dls=collectDeadlines(); const showD=dls.slice(0,5); const moreD=dls.length-showD.length; return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Deadlines</h2></div>${dls.length?`<span class="pill ${dls.some(d=>d.overdue)?'red':'gold'}">${dls.length} open</span>`:''}</div>${showD.length?showD.map(d=>`<div class="dl-row" data-go="${d.srcTab}" data-period="${esc(d.period||'')}"><div class="dl-meta"><div class="dl-title">${esc(d.title)}</div><div class="dl-src">${esc(d.src)}</div></div><div class="row-flex" style="gap:6px;">${(d.pct>0&&d.pct<100)?`<span class="pill gold">${d.pct}%</span>`:''}<span class="pill ${d.overdue?'red':(d.deadline===t?'gold':'')}">${d.overdue?'Overdue':(daysUntil(d.deadline)===0?'Today':'in '+daysUntil(d.deadline)+'d')}</span></div></div>`).join('')+(moreD>0?`<div class="dl-more">+${moreD} more</div>`:''):`<div class="mini-note">Nothing due — add deadlines to your weekly, monthly or target tabs.</div>`}</div>`; }
   function wLatest(){ let latest=null; S.series.forEach(s=>s.tests.forEach(t2=>{ if(!latest||(t2.date||'')>(latest.date||'')) latest={...t2,series:s.name}; })); return `<div class="card"><div class="section-head" style="margin-bottom:12px;"><div><h2 style="font-size:18px;">Latest Test</h2></div>${latest?`<span class="pill ${(latest.scored/latest.total*100)>=50?'green':(latest.scored/latest.total*100)>=35?'gold':'red'}">${Math.round(latest.scored/latest.total*100)}%</span>`:''}</div>${latest?`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;"><div style="min-width:0;"><div style="font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(latest.topic||latest.series)}</div><div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">${esc(latest.series)} · ${fmtDate(latest.date)}</div></div><div class="score-tag" style="font-size:26px;color:var(--accent);white-space:nowrap;">${latest.scored}<span style="color:var(--ink-faint);font-size:15px;">/${latest.total}</span></div></div><button class="btn ghost sm" id="dash-tests" style="margin-top:14px;">View test series</button>`:`<div class="mini-note">No tests logged yet. <button class="linkbtn" id="dash-tests2">Log your first →</button></div>`}</div>`; }
 
   function wTestSuite(){
@@ -1496,31 +1504,34 @@
     const el=document.getElementById('v-'+kind); if(!el)return;
     const isW=kind==='weekly'; const key=isW?curWeek:curMonth;
     const tasks=getBucket(kind,key,false).tasks;
-    const done=tasks.filter(x=>x.done).length, tot=tasks.length, pct=tot?Math.round(done/tot*100):0;
+    tasks.forEach(x=>{ if(typeof x.pct!=='number') x.pct=x.done?100:0; });
+    const done=tasks.filter(x=>x.done).length, tot=tasks.length;
+    const avg=tot?Math.round(tasks.reduce((a,b)=>a+(+b.pct||0),0)/tot):0;
     let label, isCur, nav;
     if(isW){ const s=key,e=addDays(key,6); label=`${fmtDateShort(s)} – ${fmtDateShort(e)}, ${new Date(e+'T00:00:00').getFullYear()}`; isCur=key===weekStart(todayStr()); nav=`<input type="date" class="p-date" value="${key}" style="width:150px;">`; }
     else { label=new Date(key+'-01T00:00:00').toLocaleDateString(undefined,{month:'long',year:'numeric'}); isCur=key===todayStr().slice(0,7); nav=`<input type="date" class="p-month" value="${key}-01" style="width:150px;">`; }
     el.innerHTML=`
       <div class="section-head"><div><h2>${esc(builtinLabel(isW?'weekly':'monthly'))}</h2><p>${label}${isCur?(isW?' · This week':' · This month'):''}</p></div>
         <div class="date-nav"><button class="arrow p-prev">‹</button>${nav}<button class="arrow p-next">›</button></div></div>
-      <div class="card" style="margin-bottom:16px;"><div class="row-flex" style="justify-content:space-between;margin-bottom:12px;"><span style="font-weight:600;">Completion</span><span class="pill ${pct===100&&tot?'green':'gold'}">${done}/${tot}${tot?` · ${pct}%`:''}</span></div>
-        <div class="progress" style="margin-bottom:16px;"><span style="width:${pct}%"></span></div>
+      <div class="card" style="margin-bottom:16px;"><div class="row-flex" style="justify-content:space-between;margin-bottom:12px;"><span style="font-weight:600;">Completion${tot?' · avg progress':''}</span><span class="pill ${avg===100&&tot?'green':'gold'}">${tot?`${done}/${tot} done · ${avg}%`:'0%'}</span></div>
+        <div class="progress" style="margin-bottom:16px;"><span style="width:${avg}%"></span></div>
         <div class="add-bar"><div class="field" style="flex:2;"><label>New ${isW?'weekly':'monthly'} target</label><input type="text" class="p-new" placeholder="${isW?'e.g. Finish Modern History':'e.g. Complete Economy revision'}"></div><button class="btn p-add">Add target</button></div></div>
-      <div class="card">${tot?tasks.map(x=>`<div class="task-row ${x.done?'done':''}" data-id="${x.id}"><div class="chk ${x.done?'on':''}"></div><input type="text" class="dt-text" value="${esc(x.text)}"><button class="del dt-del">×</button></div>`).join(''):`<div class="empty" style="padding:18px;">No targets for this ${isW?'week':'month'} yet — add one above.</div>`}</div>`;
+      <div class="card">${tot?tasks.map(x=>`<div class="target-prog ${x.done?'done':''}" data-id="${x.id}"><div class="tp-head"><div class="chk ${x.done?'on':''}"></div><input type="text" class="dt-text tp-text" value="${esc(x.text)}"><span class="tp-pct pill ${x.pct>=100?'green':x.pct>0?'gold':''}">${x.pct}%</span><button class="del tp-del">×</button></div><input type="range" min="0" max="100" step="5" value="${x.pct}" class="tp-range"></div>`).join(''):`<div class="empty" style="padding:18px;">No targets for this ${isW?'week':'month'} yet — add one above.</div>`}</div>`;
     const re=()=>renderPeriod(kind);
     const q=sel=>el.querySelector(sel);
     q('.p-prev').onclick=()=>{ if(isW) curWeek=weekStart(addDays(curWeek,-7)); else curMonth=shiftMonth(curMonth,-1); re(); };
     q('.p-next').onclick=()=>{ if(isW) curWeek=weekStart(addDays(curWeek,7)); else curMonth=shiftMonth(curMonth,1); re(); };
     if(isW){ const di=q('.p-date'); if(di) di.onchange=e=>{ if(e.target.value){ curWeek=weekStart(e.target.value); re(); } }; }
     else { const mi=q('.p-month'); if(mi) mi.onchange=e=>{ if(e.target.value){ curMonth=e.target.value.slice(0,7); re(); } }; }
-    const addT=()=>{ const n=q('.p-new'); const v=n.value.trim(); if(!v){n.focus();return;} getBucket(kind,key,true).tasks.push({id:uid(),text:v,done:false}); persist(); re(); toast('Target added'); };
+    const addT=()=>{ const n=q('.p-new'); const v=n.value.trim(); if(!v){n.focus();return;} getBucket(kind,key,true).tasks.push({id:uid(),text:v,done:false,pct:0}); persist(); re(); toast('Target added'); };
     q('.p-add').onclick=addT;
     q('.p-new').onkeydown=e=>{ if(e.key==='Enter') addT(); };
-    el.querySelectorAll('.task-row').forEach(row=>{ const id=row.dataset.id; const it=tasks.find(x=>x.id===id);
-      row.querySelector('.chk').onclick=()=>{ it.done=!it.done; persist(); re(); };
-      row.querySelector('.dt-text').onblur=e=>{ it.text=e.target.value; persist(); };
-      row.querySelector('.dt-text').onkeydown=e=>{ if(e.key==='Enter') e.target.blur(); };
-      row.querySelector('.dt-del').onclick=()=>{ const b=getBucket(kind,key,false); b.tasks=tasks.filter(x=>x.id!==id); if(periodMap(kind)[key]) periodMap(kind)[key].tasks=b.tasks; persist(); re(); };
+    el.querySelectorAll('.target-prog').forEach(row=>{ const id=row.dataset.id; const it=tasks.find(x=>x.id===id);
+      row.querySelector('.chk').onclick=()=>{ it.done=!it.done; it.pct=it.done?100:0; persist(); re(); };
+      const tx=row.querySelector('.tp-text'); tx.onblur=e=>{ it.text=e.target.value; persist(); }; tx.onkeydown=e=>{ if(e.key==='Enter') e.target.blur(); };
+      const rng=row.querySelector('.tp-range'); rng.oninput=e=>{ it.pct=+e.target.value; const pc=row.querySelector('.tp-pct'); pc.textContent=it.pct+'%'; pc.className='tp-pct pill '+(it.pct>=100?'green':it.pct>0?'gold':''); };
+      rng.onchange=()=>{ it.done=it.pct>=100; persist(); re(); };
+      row.querySelector('.tp-del').onclick=()=>{ const b=getBucket(kind,key,false); b.tasks=tasks.filter(x=>x.id!==id); if(periodMap(kind)[key]) periodMap(kind)[key].tasks=b.tasks; persist(); re(); };
     });
   }
   function renderWeekly(){ renderPeriod('weekly'); }
