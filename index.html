@@ -1832,9 +1832,8 @@
           <div class="target-row" data-id="${it.id}">
             <span class="pill ${typeColor(it.type)}" style="min-width:74px;justify-content:center;">${esc(it.type)}</span>
             <div class="meta" style="min-width:0;">
-              <div class="t-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(it.label||it.url)}</div>
+              <a class="t-title res-open" href="${esc(normUrl(it.url))}" target="_blank" rel="noopener noreferrer" style="color:var(--ink);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;">${esc(it.label||it.url)} ↗</a>
             </div>
-            <button class="btn sm res-open-btn" data-url="${esc(normUrl(it.url))}">Open ↗</button>
             <button class="del res-edit" title="Edit" style="color:var(--accent);font-size:14px;">✎</button>
             <button class="del res-del">×</button>
           </div>`).join('') : `<div class="empty">${term?`No matches for “${esc(resSearch.trim())}”${resFilter!=='All'?' in '+esc(resFilter):''}.`:`No links here yet${resFilter!=='All'?' for '+esc(resFilter):''} — add one above.`}</div>`}
@@ -1859,7 +1858,6 @@
     if(sb){ sb.oninput=()=>{ resSearch=sb.value; const pos=sb.selectionStart; renderResource(); const nb=document.getElementById('res-search'); if(nb){ nb.focus(); try{ nb.setSelectionRange(pos,pos); }catch(e){} } }; }
     const sc2=document.getElementById('res-search-clear'); if(sc2) sc2.onclick=()=>{ resSearch=''; renderResource(); const nb=document.getElementById('res-search'); if(nb) nb.focus(); };
     el.querySelectorAll('.target-row').forEach(row=>{ const id=row.dataset.id; row.querySelector('.res-del').onclick=(e)=>{ e.preventDefault(); e.stopPropagation(); tab.items=tab.items.filter(x=>x.id!==id); persist(); renderResource(); };
-      const ob=row.querySelector('.res-open-btn'); if(ob) ob.onclick=(e)=>{ e.preventDefault(); e.stopPropagation(); const u=ob.dataset.url; if(u){ try{ window.open(u,'_blank','noopener,noreferrer'); }catch(err){} } };
       const re=row.querySelector('.res-edit'); if(re) re.onclick=(e)=>{ e.preventDefault(); e.stopPropagation(); const it=tab.items.find(x=>x.id===id); if(!it)return;
         openUiModal(`<button class="icon-btn modal-close" id="rle-x">✕</button><h3>Edit link</h3>
           <div class="field" style="margin-bottom:10px;"><label>Label</label><input type="text" id="rle-label" value="${esc(it.label)}"></div>
